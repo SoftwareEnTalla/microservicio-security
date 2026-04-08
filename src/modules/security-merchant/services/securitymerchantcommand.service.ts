@@ -115,7 +115,23 @@ export class SecurityMerchantCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: approved-merchant-must-have-code
+      // Todo merchant aprobado debe tener código comercial.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'merchantCode') === undefined || this.dslValue(entityData, currentData, inputData, 'merchantCode') === null || (typeof this.dslValue(entityData, currentData, inputData, 'merchantCode') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'merchantCode')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'merchantCode')) && this.dslValue(entityData, currentData, inputData, 'merchantCode').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'merchantCode') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'merchantCode')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'merchantCode')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'merchantCode'))).length === 0)))) {
+        throw new Error('SEC_MERCHANT_001: El merchant requiere merchantCode');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: approved-merchant-must-have-code
+      // Todo merchant aprobado debe tener código comercial.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'merchantCode') === undefined || this.dslValue(entityData, currentData, inputData, 'merchantCode') === null || (typeof this.dslValue(entityData, currentData, inputData, 'merchantCode') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'merchantCode')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'merchantCode')) && this.dslValue(entityData, currentData, inputData, 'merchantCode').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'merchantCode') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'merchantCode')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'merchantCode')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'merchantCode'))).length === 0)))) {
+        throw new Error('SEC_MERCHANT_001: El merchant requiere merchantCode');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

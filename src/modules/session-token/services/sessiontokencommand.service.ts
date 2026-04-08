@@ -115,7 +115,23 @@ export class SessionTokenCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: token-must-have-validity-window
+      // Todo token debe tener ventana de validez definida.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'issuedAt') === undefined || this.dslValue(entityData, currentData, inputData, 'issuedAt') === null || (typeof this.dslValue(entityData, currentData, inputData, 'issuedAt') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'issuedAt')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'issuedAt')) && this.dslValue(entityData, currentData, inputData, 'issuedAt').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'issuedAt') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'issuedAt')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'issuedAt')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'issuedAt'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'expiresAt') === undefined || this.dslValue(entityData, currentData, inputData, 'expiresAt') === null || (typeof this.dslValue(entityData, currentData, inputData, 'expiresAt') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'expiresAt')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'expiresAt')) && this.dslValue(entityData, currentData, inputData, 'expiresAt').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'expiresAt') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'expiresAt')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'expiresAt')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'expiresAt'))).length === 0)))) {
+        throw new Error('TOKEN_001: El token requiere fechas de emisión y expiración');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: token-must-have-validity-window
+      // Todo token debe tener ventana de validez definida.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'issuedAt') === undefined || this.dslValue(entityData, currentData, inputData, 'issuedAt') === null || (typeof this.dslValue(entityData, currentData, inputData, 'issuedAt') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'issuedAt')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'issuedAt')) && this.dslValue(entityData, currentData, inputData, 'issuedAt').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'issuedAt') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'issuedAt')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'issuedAt')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'issuedAt'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'expiresAt') === undefined || this.dslValue(entityData, currentData, inputData, 'expiresAt') === null || (typeof this.dslValue(entityData, currentData, inputData, 'expiresAt') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'expiresAt')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'expiresAt')) && this.dslValue(entityData, currentData, inputData, 'expiresAt').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'expiresAt') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'expiresAt')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'expiresAt')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'expiresAt'))).length === 0)))) {
+        throw new Error('TOKEN_001: El token requiere fechas de emisión y expiración');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

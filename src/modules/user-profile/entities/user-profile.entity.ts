@@ -37,7 +37,8 @@ import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { plainToInstance } from 'class-transformer';
 
 
-
+@Index('idx_user_profile_user_id', ['userId'], { unique: true })
+@Unique('uq_user_profile_user_id', ['userId'])
 @ChildEntity('userprofile')
 @ObjectType()
 export class UserProfile extends BaseEntity {
@@ -62,10 +63,122 @@ export class UserProfile extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, default: "Sin descripción", comment: 'Este es un campo para describir la instancia UserProfile' })
   private description!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Referencia al usuario dueño del perfil',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Referencia al usuario dueño del perfil', nullable: false })
+  @Column({ type: 'uuid', nullable: false, unique: true, comment: 'Referencia al usuario dueño del perfil' })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Nombre',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Nombre', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 120, comment: 'Nombre' })
+  firstName?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Apellidos',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Apellidos', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 120, comment: 'Apellidos' })
+  lastName?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'URL de la foto de perfil',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'URL de la foto de perfil', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 250, comment: 'URL de la foto de perfil' })
+  profilePhotoUrl?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Idioma preferido',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Idioma preferido', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 15, comment: 'Idioma preferido' })
+  language?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'País',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'País', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 80, comment: 'País' })
+  country?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Provincia o estado',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Provincia o estado', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 80, comment: 'Provincia o estado' })
+  stateOrProvince?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Ciudad',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Ciudad', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 80, comment: 'Ciudad' })
+  city?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Dirección física',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Dirección física', nullable: true })
+  @Column({ type: 'text', nullable: true, comment: 'Dirección física' })
+  address?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del perfil',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del perfil', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Metadatos del perfil' })
+  metadata?: Record<string, any> = {};
 
   protected executeDslLifecycle(): void {
-
+    // Rule: profile-must-reference-user
+    // Todo perfil debe estar asociado a un usuario.
+    if (!(!(this.userId === undefined || this.userId === null || (typeof this.userId === 'string' && String(this.userId).trim() === '') || (Array.isArray(this.userId) && this.userId.length === 0) || (typeof this.userId === 'object' && !Array.isArray(this.userId) && Object.prototype.toString.call(this.userId) === '[object Object]' && Object.keys(Object(this.userId)).length === 0)))) {
+      throw new Error('USER_PROFILE_001: El perfil requiere referencia a user');
+    }
   }
 
   // Relación con BaseEntity (opcional, si aplica)

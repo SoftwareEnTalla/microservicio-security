@@ -31,7 +31,7 @@
 
 import { Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { FindManyOptions } from "typeorm";
-import { SalesManager } from "../entities/salesmanager.entity";
+import { SalesManager } from "../entities/sales-manager.entity";
 import { BaseEntity } from "../entities/base.entity";
 import { SalesManagerQueryRepository } from "../repositories/salesmanagerquery.repository";
 import { SalesManagerResponse, SalesManagersResponse } from "../types/salesmanager.types";

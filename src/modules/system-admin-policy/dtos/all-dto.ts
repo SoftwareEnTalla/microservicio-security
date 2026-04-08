@@ -107,7 +107,95 @@ export class BaseSystemAdminPolicyDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Administrador al que aplica la política o auditoría',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Administrador al que aplica la política o auditoría', nullable: false })
+  adminUserId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código de la política administrativa',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código de la política administrativa', nullable: false })
+  policyCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Acción administrativa ejecutada o permitida',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Acción administrativa ejecutada o permitida', nullable: false })
+  actionType!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Tipo de objetivo administrado',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Tipo de objetivo administrado', nullable: true })
+  targetType?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Identificador del objetivo',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Identificador del objetivo', nullable: true })
+  targetId?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Resultado de la evaluación de política',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Resultado de la evaluación de política', nullable: false })
+  decision!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Motivo o justificación',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Motivo o justificación', nullable: true })
+  reason?: string = '';
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: false,
+    description: 'Fecha del evento administrativo',
+  })
+  @IsDate()
+  @IsNotEmpty()
+  @Field(() => Date, { description: 'Fecha del evento administrativo', nullable: false })
+  occurredAt!: Date;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos de la política o auditoría',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos de la política o auditoría', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseSystemAdminPolicyDto>) {

@@ -115,7 +115,23 @@ export class AuthenticationCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: successful-authentication-must-return-acls
+      // Una autenticación exitosa debe devolver ACLs resueltas.
+      if (!(this.dslValue(entityData, currentData, inputData, 'authStatus') === 'SUCCEEDED' && !(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === undefined || this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === null || (typeof this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')) && this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls'))).length === 0)))) {
+        throw new Error('AUTH_001: La autenticación exitosa debe devolver ACLs');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: successful-authentication-must-return-acls
+      // Una autenticación exitosa debe devolver ACLs resueltas.
+      if (!(this.dslValue(entityData, currentData, inputData, 'authStatus') === 'SUCCEEDED' && !(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === undefined || this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === null || (typeof this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')) && this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'authenticatedUserAcls'))).length === 0)))) {
+        throw new Error('AUTH_001: La autenticación exitosa debe devolver ACLs');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

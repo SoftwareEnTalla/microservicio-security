@@ -37,7 +37,7 @@ import {
 
 
 import { BaseEntity } from '../entities/base.entity';
-import { SalesManager } from '../entities/salesmanager.entity';
+import { SalesManager } from '../entities/sales-manager.entity';
 import { SalesManagerQueryRepository } from './salesmanagerquery.repository';
 import { generateCacheKey } from 'src/utils/functions';
 import { Cacheable } from '../decorators/cache.decorator';

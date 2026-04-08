@@ -115,7 +115,23 @@ export class SecurityMasterDataCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: security-master-data-must-have-category
+      // Todo dato maestro de seguridad debe declarar categoría y código.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'category') === undefined || this.dslValue(entityData, currentData, inputData, 'category') === null || (typeof this.dslValue(entityData, currentData, inputData, 'category') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'category')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'category')) && this.dslValue(entityData, currentData, inputData, 'category').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'category') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'category')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'category')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'category'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'code') === undefined || this.dslValue(entityData, currentData, inputData, 'code') === null || (typeof this.dslValue(entityData, currentData, inputData, 'code') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'code')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'code')) && this.dslValue(entityData, currentData, inputData, 'code').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'code') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'code')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'code')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'code'))).length === 0)))) {
+        throw new Error('SEC_MD_001: El dato maestro de seguridad requiere categoría y código');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: security-master-data-must-have-category
+      // Todo dato maestro de seguridad debe declarar categoría y código.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'category') === undefined || this.dslValue(entityData, currentData, inputData, 'category') === null || (typeof this.dslValue(entityData, currentData, inputData, 'category') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'category')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'category')) && this.dslValue(entityData, currentData, inputData, 'category').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'category') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'category')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'category')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'category'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'code') === undefined || this.dslValue(entityData, currentData, inputData, 'code') === null || (typeof this.dslValue(entityData, currentData, inputData, 'code') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'code')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'code')) && this.dslValue(entityData, currentData, inputData, 'code').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'code') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'code')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'code')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'code'))).length === 0)))) {
+        throw new Error('SEC_MD_001: El dato maestro de seguridad requiere categoría y código');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

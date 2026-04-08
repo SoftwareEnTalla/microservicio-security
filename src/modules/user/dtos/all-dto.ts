@@ -107,7 +107,185 @@ export class BaseUserDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código único del usuario',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código único del usuario', nullable: false })
+  code!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Nombre de usuario si aplica',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Nombre de usuario si aplica', nullable: true })
+  username?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Correo principal del usuario',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Correo principal del usuario', nullable: false })
+  email!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Teléfono principal del usuario',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Teléfono principal del usuario', nullable: true })
+  phone?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Hash de la contraseña del usuario',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Hash de la contraseña del usuario', nullable: false })
+  passwordHash!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Referencia al usuario que lo refirió',
+  })
+  @IsUUID()
+  @IsOptional()
+  @Field(() => String, { description: 'Referencia al usuario que lo refirió', nullable: true })
+  referralId?: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Tipo de identificador principal',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Tipo de identificador principal', nullable: false })
+  identifierType!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Valor del identificador principal inmutable',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Valor del identificador principal inmutable', nullable: false })
+  identifierValue!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado operativo de la cuenta',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado operativo de la cuenta', nullable: false })
+  accountStatus!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Tipo funcional del usuario',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Tipo funcional del usuario', nullable: false })
+  userType!: string;
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si aceptó términos y condiciones',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si aceptó términos y condiciones', nullable: false })
+  termsAccepted!: boolean;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de aceptación de términos',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de aceptación de términos', nullable: true })
+  termsAcceptedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Último acceso exitoso',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Último acceso exitoso', nullable: true })
+  lastLoginAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha del último cambio de contraseña',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha del último cambio de contraseña', nullable: true })
+  passwordChangedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si MFA está habilitado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si MFA está habilitado', nullable: false })
+  mfaEnabled!: boolean;
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si TOTP está habilitado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si TOTP está habilitado', nullable: false })
+  totpEnabled!: boolean;
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si solo puede autenticarse vía proveedor federado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si solo puede autenticarse vía proveedor federado', nullable: false })
+  federatedOnly!: boolean;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos adicionales del usuario',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos adicionales del usuario', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseUserDto>) {

@@ -37,7 +37,9 @@ import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { plainToInstance } from 'class-transformer';
 
 
-
+@Index('idx_security_master_data_code', ['code'], { unique: true })
+@Index('idx_security_master_data_category_sort', ['category', 'sortOrder'])
+@Unique('uq_security_master_data_code', ['code'])
 @ChildEntity('securitymasterdata')
 @ObjectType()
 export class SecurityMasterData extends BaseEntity {
@@ -62,10 +64,67 @@ export class SecurityMasterData extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, default: "Sin descripción", comment: 'Este es un campo para describir la instancia SecurityMasterData' })
   private description!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Categoría del dato maestro de seguridad',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Categoría del dato maestro de seguridad', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, comment: 'Categoría del dato maestro de seguridad' })
+  category!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código del valor de catálogo',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código del valor de catálogo', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 120, unique: true, comment: 'Código del valor de catálogo' })
+  code!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Nombre visible',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Nombre visible', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 180, comment: 'Nombre visible' })
+  displayName!: string;
+
+  @ApiProperty({
+    type: () => Number,
+    nullable: false,
+    description: 'Orden de visualización',
+  })
+  @IsInt()
+  @IsNotEmpty()
+  @Field(() => Int, { description: 'Orden de visualización', nullable: false })
+  @Column({ type: 'int', nullable: false, default: 0, comment: 'Orden de visualización' })
+  sortOrder!: number;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del dato maestro',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del dato maestro', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Metadatos del dato maestro' })
+  metadata?: Record<string, any> = {};
 
   protected executeDslLifecycle(): void {
-
+    // Rule: security-master-data-must-have-category
+    // Todo dato maestro de seguridad debe declarar categoría y código.
+    if (!(!(this.category === undefined || this.category === null || (typeof this.category === 'string' && String(this.category).trim() === '') || (Array.isArray(this.category) && this.category.length === 0) || (typeof this.category === 'object' && !Array.isArray(this.category) && Object.prototype.toString.call(this.category) === '[object Object]' && Object.keys(Object(this.category)).length === 0)) && !(this.code === undefined || this.code === null || (typeof this.code === 'string' && String(this.code).trim() === '') || (Array.isArray(this.code) && this.code.length === 0) || (typeof this.code === 'object' && !Array.isArray(this.code) && Object.prototype.toString.call(this.code) === '[object Object]' && Object.keys(Object(this.code)).length === 0)))) {
+      throw new Error('SEC_MD_001: El dato maestro de seguridad requiere categoría y código');
+    }
   }
 
   // Relación con BaseEntity (opcional, si aplica)

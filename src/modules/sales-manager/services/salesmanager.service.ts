@@ -29,7 +29,7 @@
  */
 
 import { Injectable } from "@nestjs/common";
-import { SalesManager } from "../entities/salesmanager.entity";
+import { SalesManager } from "../entities/sales-manager.entity";
 import { SalesManagerRepository } from "../repositories/salesmanager.repository";
 
 @Injectable()

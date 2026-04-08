@@ -115,7 +115,23 @@ export class IdentityFederationCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: enabled-provider-must-have-protocol
+      // Toda integración federada habilitada debe declarar familia y versión de protocolo.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'protocolFamily') === undefined || this.dslValue(entityData, currentData, inputData, 'protocolFamily') === null || (typeof this.dslValue(entityData, currentData, inputData, 'protocolFamily') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'protocolFamily')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolFamily')) && this.dslValue(entityData, currentData, inputData, 'protocolFamily').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'protocolFamily') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolFamily')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'protocolFamily')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'protocolFamily'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'protocolVersion') === undefined || this.dslValue(entityData, currentData, inputData, 'protocolVersion') === null || (typeof this.dslValue(entityData, currentData, inputData, 'protocolVersion') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'protocolVersion')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolVersion')) && this.dslValue(entityData, currentData, inputData, 'protocolVersion').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'protocolVersion') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolVersion')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'protocolVersion')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'protocolVersion'))).length === 0)))) {
+        throw new Error('FEDERATION_001: La federación requiere familia y versión de protocolo');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: enabled-provider-must-have-protocol
+      // Toda integración federada habilitada debe declarar familia y versión de protocolo.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'protocolFamily') === undefined || this.dslValue(entityData, currentData, inputData, 'protocolFamily') === null || (typeof this.dslValue(entityData, currentData, inputData, 'protocolFamily') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'protocolFamily')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolFamily')) && this.dslValue(entityData, currentData, inputData, 'protocolFamily').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'protocolFamily') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolFamily')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'protocolFamily')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'protocolFamily'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'protocolVersion') === undefined || this.dslValue(entityData, currentData, inputData, 'protocolVersion') === null || (typeof this.dslValue(entityData, currentData, inputData, 'protocolVersion') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'protocolVersion')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolVersion')) && this.dslValue(entityData, currentData, inputData, 'protocolVersion').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'protocolVersion') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'protocolVersion')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'protocolVersion')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'protocolVersion'))).length === 0)))) {
+        throw new Error('FEDERATION_001: La federación requiere familia y versión de protocolo');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

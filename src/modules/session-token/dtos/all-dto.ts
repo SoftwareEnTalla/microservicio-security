@@ -107,7 +107,135 @@ export class BaseSessionTokenDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Usuario dueño de la sesión',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Usuario dueño de la sesión', nullable: false })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Aplicación o microservicio suscrito',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Aplicación o microservicio suscrito', nullable: true })
+  subscriberId?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código único de sesión',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código único de sesión', nullable: false })
+  sessionCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Identificador del token',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Identificador del token', nullable: false })
+  tokenId!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Tipo de token o artefacto de seguridad',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Tipo de token o artefacto de seguridad', nullable: false })
+  tokenType!: string;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: false,
+    description: 'Fecha de emisión',
+  })
+  @IsDate()
+  @IsNotEmpty()
+  @Field(() => Date, { description: 'Fecha de emisión', nullable: false })
+  issuedAt!: Date;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: false,
+    description: 'Fecha de expiración',
+  })
+  @IsDate()
+  @IsNotEmpty()
+  @Field(() => Date, { description: 'Fecha de expiración', nullable: false })
+  expiresAt!: Date;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de revocación',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de revocación', nullable: true })
+  revokedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Motivo de revocación',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Motivo de revocación', nullable: true })
+  revocationReason?: string = '';
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de cierre de sesión',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de cierre de sesión', nullable: true })
+  logoutAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado del token o sesión',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado del token o sesión', nullable: false })
+  certificationStatus!: string;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'ACLs devueltas en refresh o revalidación',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'ACLs devueltas en refresh o revalidación', nullable: true })
+  authenticatedUserAcls?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del token o sesión',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del token o sesión', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseSessionTokenDto>) {

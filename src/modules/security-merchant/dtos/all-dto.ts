@@ -107,7 +107,95 @@ export class BaseSecurityMerchantDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Referencia al user canónico',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Referencia al user canónico', nullable: false })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código único del comercio',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código único del comercio', nullable: false })
+  merchantCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Representante legal',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Representante legal', nullable: true })
+  legalRepresentative?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Razón social o entidad jurídica',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Razón social o entidad jurídica', nullable: true })
+  legalEntityName?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Medios de cobro del merchant',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Medios de cobro del merchant', nullable: true })
+  collectionMethods?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Cuentas bancarias del merchant',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Cuentas bancarias del merchant', nullable: true })
+  bankAccounts?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado de aprobación operativa',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado de aprobación operativa', nullable: false })
+  approvalStatus!: string;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de aprobación',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de aprobación', nullable: true })
+  approvedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del merchant',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del merchant', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseSecurityMerchantDto>) {

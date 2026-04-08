@@ -37,7 +37,8 @@ import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { plainToInstance } from 'class-transformer';
 
 
-
+@Index('idx_mfa_totp_user_id', ['userId'], { unique: true })
+@Unique('uq_mfa_totp_user_id', ['userId'])
 @ChildEntity('mfatotp')
 @ObjectType()
 export class MfaTotp extends BaseEntity {
@@ -62,10 +63,133 @@ export class MfaTotp extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, default: "Sin descripción", comment: 'Este es un campo para describir la instancia MfaTotp' })
   private description!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Usuario dueño de la configuración MFA',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Usuario dueño de la configuración MFA', nullable: false })
+  @Column({ type: 'uuid', nullable: false, unique: true, comment: 'Usuario dueño de la configuración MFA' })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si MFA está habilitado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si MFA está habilitado', nullable: false })
+  @Column({ type: 'boolean', nullable: false, default: false, comment: 'Indica si MFA está habilitado' })
+  mfaEnabled!: boolean;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Modo de MFA',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Modo de MFA', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, default: 'OPTIONAL', comment: 'Modo de MFA' })
+  mfaMode!: string;
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si TOTP está habilitado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si TOTP está habilitado', nullable: false })
+  @Column({ type: 'boolean', nullable: false, default: false, comment: 'Indica si TOTP está habilitado' })
+  totpEnabled!: boolean;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Referencia segura al secreto TOTP',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Referencia segura al secreto TOTP', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 255, comment: 'Referencia segura al secreto TOTP' })
+  totpSecretRef?: string = '';
+
+  @ApiProperty({
+    type: () => Number,
+    nullable: false,
+    description: 'Versión del set de códigos de recuperación',
+  })
+  @IsInt()
+  @IsNotEmpty()
+  @Field(() => Int, { description: 'Versión del set de códigos de recuperación', nullable: false })
+  @Column({ type: 'int', nullable: false, default: 1, comment: 'Versión del set de códigos de recuperación' })
+  recoveryCodesVersion!: number;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado del reto MFA',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado del reto MFA', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, default: 'NOT_REQUIRED', comment: 'Estado del reto MFA' })
+  challengeStatus!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Tipo de challenge MFA',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Tipo de challenge MFA', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 255, comment: 'Tipo de challenge MFA' })
+  challengeType?: string = '';
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Última verificación exitosa',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Última verificación exitosa', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, comment: 'Última verificación exitosa' })
+  verifiedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Último uso de MFA',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Último uso de MFA', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, comment: 'Último uso de MFA' })
+  lastUsedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos de configuración MFA',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos de configuración MFA', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Metadatos de configuración MFA' })
+  metadata?: Record<string, any> = {};
 
   protected executeDslLifecycle(): void {
-
+    // Rule: totp-enabled-requires-secret
+    // No se puede habilitar TOTP sin una referencia válida al secreto.
+    if (!(this.totpEnabled === true && !(this.totpSecretRef === undefined || this.totpSecretRef === null || (typeof this.totpSecretRef === 'string' && String(this.totpSecretRef).trim() === '') || (Array.isArray(this.totpSecretRef) && this.totpSecretRef.length === 0) || (typeof this.totpSecretRef === 'object' && !Array.isArray(this.totpSecretRef) && Object.prototype.toString.call(this.totpSecretRef) === '[object Object]' && Object.keys(Object(this.totpSecretRef)).length === 0)))) {
+      throw new Error('MFA_001: TOTP habilitado requiere secreto configurado');
+    }
   }
 
   // Relación con BaseEntity (opcional, si aplica)

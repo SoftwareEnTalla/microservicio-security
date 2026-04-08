@@ -115,7 +115,23 @@ export class RbacAclCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: acl-must-have-resource-and-action
+      // Toda ACL debe definir recurso y acción.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'resource') === undefined || this.dslValue(entityData, currentData, inputData, 'resource') === null || (typeof this.dslValue(entityData, currentData, inputData, 'resource') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'resource')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'resource')) && this.dslValue(entityData, currentData, inputData, 'resource').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'resource') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'resource')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'resource')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'resource'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'action') === undefined || this.dslValue(entityData, currentData, inputData, 'action') === null || (typeof this.dslValue(entityData, currentData, inputData, 'action') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'action')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'action')) && this.dslValue(entityData, currentData, inputData, 'action').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'action') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'action')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'action')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'action'))).length === 0)))) {
+        throw new Error('RBAC_001: La ACL requiere recurso y acción');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: acl-must-have-resource-and-action
+      // Toda ACL debe definir recurso y acción.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'resource') === undefined || this.dslValue(entityData, currentData, inputData, 'resource') === null || (typeof this.dslValue(entityData, currentData, inputData, 'resource') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'resource')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'resource')) && this.dslValue(entityData, currentData, inputData, 'resource').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'resource') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'resource')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'resource')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'resource'))).length === 0)) && !(this.dslValue(entityData, currentData, inputData, 'action') === undefined || this.dslValue(entityData, currentData, inputData, 'action') === null || (typeof this.dslValue(entityData, currentData, inputData, 'action') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'action')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'action')) && this.dslValue(entityData, currentData, inputData, 'action').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'action') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'action')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'action')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'action'))).length === 0)))) {
+        throw new Error('RBAC_001: La ACL requiere recurso y acción');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

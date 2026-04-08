@@ -107,7 +107,115 @@ export class BaseAuthenticationDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Usuario autenticado o que intenta autenticarse',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Usuario autenticado o que intenta autenticarse', nullable: false })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Identificador usado en el login',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Identificador usado en el login', nullable: false })
+  loginIdentifier!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Método de autenticación utilizado',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Método de autenticación utilizado', nullable: false })
+  authMethod!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Resultado del proceso de autenticación',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Resultado del proceso de autenticación', nullable: false })
+  authStatus!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Motivo del fallo si aplica',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Motivo del fallo si aplica', nullable: true })
+  failureReason?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Dirección IP del intento',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Dirección IP del intento', nullable: true })
+  ipAddress?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Huella del dispositivo',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Huella del dispositivo', nullable: true })
+  deviceFingerprint?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Cadena user-agent',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Cadena user-agent', nullable: true })
+  userAgent?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'ACLs resueltas devueltas al autenticarse',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'ACLs resueltas devueltas al autenticarse', nullable: true })
+  authenticatedUserAcls?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: false,
+    description: 'Momento del evento de autenticación',
+  })
+  @IsDate()
+  @IsNotEmpty()
+  @Field(() => Date, { description: 'Momento del evento de autenticación', nullable: false })
+  occurredAt!: Date;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos operativos del evento de autenticación',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos operativos del evento de autenticación', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseAuthenticationDto>) {

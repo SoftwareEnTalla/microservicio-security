@@ -107,7 +107,55 @@ export class BaseSecurityMasterDataDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Categoría del dato maestro de seguridad',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Categoría del dato maestro de seguridad', nullable: false })
+  category!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código del valor de catálogo',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código del valor de catálogo', nullable: false })
+  code!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Nombre visible',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Nombre visible', nullable: false })
+  displayName!: string;
+
+  @ApiProperty({
+    type: () => Number,
+    nullable: false,
+    description: 'Orden de visualización',
+  })
+  @IsInt()
+  @IsNotEmpty()
+  @Field(() => Int, { description: 'Orden de visualización', nullable: false })
+  sortOrder!: number;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del dato maestro',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del dato maestro', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseSecurityMasterDataDto>) {

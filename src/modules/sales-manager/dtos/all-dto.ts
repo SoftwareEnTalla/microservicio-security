@@ -110,11 +110,11 @@ export class BaseSalesManagerDto {
   @ApiProperty({
     type: () => String,
     nullable: false,
-    description: 'Referencia canónica al user del microservicio security',
+    description: 'Referencia al user base',
   })
   @IsUUID()
   @IsNotEmpty()
-  @Field(() => String, { description: 'Referencia canónica al user del microservicio security', nullable: false })
+  @Field(() => String, { description: 'Referencia al user base', nullable: false })
   userId!: string;
 
   @ApiProperty({
@@ -130,11 +130,11 @@ export class BaseSalesManagerDto {
   @ApiProperty({
     type: () => String,
     nullable: false,
-    description: 'Estado de habilitación comercial',
+    description: 'Estado de habilitación',
   })
   @IsString()
   @IsNotEmpty()
-  @Field(() => String, { description: 'Estado de habilitación comercial', nullable: false })
+  @Field(() => String, { description: 'Estado de habilitación', nullable: false })
   approvalStatus!: string;
 
   @ApiProperty({
@@ -146,6 +146,16 @@ export class BaseSalesManagerDto {
   @IsOptional()
   @Field(() => String, { description: 'Plan de comisión vigente', nullable: true })
   commissionPlanId?: string;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Contratos o acuerdos con merchants',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Contratos o acuerdos con merchants', nullable: true })
+  merchantContracts?: Record<string, any> = {};
 
   @ApiProperty({
     type: () => String,
@@ -160,11 +170,11 @@ export class BaseSalesManagerDto {
   @ApiProperty({
     type: () => Object,
     nullable: true,
-    description: 'Metadatos del gestor de ventas',
+    description: 'Metadatos del sales manager',
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del gestor de ventas', nullable: true })
+  @Field(() => String, { description: 'Metadatos del sales manager', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor

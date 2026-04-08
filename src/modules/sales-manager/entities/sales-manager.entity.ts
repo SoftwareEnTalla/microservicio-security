@@ -37,7 +37,10 @@ import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { plainToInstance } from 'class-transformer';
 
 
-
+@Index('idx_sales_manager_user_id', ['userId'], { unique: true })
+@Index('idx_sales_manager_code', ['managerCode'], { unique: true })
+@Unique('uq_sales_manager_user_id', ['userId'])
+@Unique('uq_sales_manager_code', ['managerCode'])
 @ChildEntity('salesmanager')
 @ObjectType()
 export class SalesManager extends BaseEntity {
@@ -62,10 +65,89 @@ export class SalesManager extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, default: "Sin descripción", comment: 'Este es un campo para describir la instancia SalesManager' })
   private description!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Referencia al user base',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Referencia al user base', nullable: false })
+  @Column({ type: 'uuid', nullable: false, unique: true, comment: 'Referencia al user base' })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código único del gestor de ventas',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código único del gestor de ventas', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 80, unique: true, comment: 'Código único del gestor de ventas' })
+  managerCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado de habilitación',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado de habilitación', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, default: 'PENDING', comment: 'Estado de habilitación' })
+  approvalStatus!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Plan de comisión vigente',
+  })
+  @IsUUID()
+  @IsOptional()
+  @Field(() => String, { description: 'Plan de comisión vigente', nullable: true })
+  @Column({ type: 'uuid', nullable: true, comment: 'Plan de comisión vigente' })
+  commissionPlanId?: string;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Contratos o acuerdos con merchants',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Contratos o acuerdos con merchants', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Contratos o acuerdos con merchants' })
+  merchantContracts?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Referencia al árbol de referidos',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Referencia al árbol de referidos', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 150, comment: 'Referencia al árbol de referidos' })
+  referralTreeReference?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del sales manager',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del sales manager', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Metadatos del sales manager' })
+  metadata?: Record<string, any> = {};
 
   protected executeDslLifecycle(): void {
-
+    // Rule: sales-manager-must-reference-user
+    // Todo sales manager debe referenciar un user base.
+    if (!(!(this.userId === undefined || this.userId === null || (typeof this.userId === 'string' && String(this.userId).trim() === '') || (Array.isArray(this.userId) && this.userId.length === 0) || (typeof this.userId === 'object' && !Array.isArray(this.userId) && Object.prototype.toString.call(this.userId) === '[object Object]' && Object.keys(Object(this.userId)).length === 0)))) {
+      throw new Error('SALES_MANAGER_001: El sales manager debe referenciar un user');
+    }
   }
 
   // Relación con BaseEntity (opcional, si aplica)

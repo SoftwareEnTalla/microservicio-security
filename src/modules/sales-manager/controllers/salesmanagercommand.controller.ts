@@ -46,7 +46,7 @@ import { SalesManagerCommandService } from "../services/salesmanagercommand.serv
 import { DeleteResult } from "typeorm";
 import { Logger } from "@nestjs/common";
 import { Helper } from "src/common/helpers/helpers";
-import { SalesManager } from "../entities/salesmanager.entity";
+import { SalesManager } from "../entities/sales-manager.entity";
 import { SalesManagerResponse, SalesManagersResponse } from "../types/salesmanager.types";
 import { CreateSalesManagerDto, UpdateSalesManagerDto } from "../dtos/all-dto"; 
 

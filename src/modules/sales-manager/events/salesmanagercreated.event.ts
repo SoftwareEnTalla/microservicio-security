@@ -30,7 +30,7 @@
 
 
 import { CreateSalesManagerDto } from '../dtos/all-dto';
-import { SalesManager } from '../entities/salesmanager.entity';
+import { SalesManager } from '../entities/sales-manager.entity';
 import { BaseEvent, PayloadEvent } from './base.event'; 
 import { v4 as uuidv4 } from "uuid";
 

@@ -41,7 +41,7 @@
 } from 'typeorm';
  
   import { BaseEntity } from '../entities/base.entity';
-  import { SalesManager } from '../entities/salesmanager.entity';
+  import { SalesManager } from '../entities/sales-manager.entity';
   import { Cacheable } from '../decorators/cache.decorator';
   import { generateCacheKey } from 'src/utils/functions';
 

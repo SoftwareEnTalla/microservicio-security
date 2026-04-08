@@ -40,7 +40,7 @@ import { SalesManagerRepository } from "../repositories/salesmanager.repository"
 import { SalesManagerResolver } from "../graphql/salesmanager.resolver";
 import { SalesManagerAuthGuard } from "../guards/salesmanagerauthguard.guard";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { SalesManager } from "../entities/salesmanager.entity";
+import { SalesManager } from "../entities/sales-manager.entity";
 import { BaseEntity } from "../entities/base.entity";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";

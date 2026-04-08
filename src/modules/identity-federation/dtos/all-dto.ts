@@ -107,7 +107,145 @@ export class BaseIdentityFederationDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código interno del proveedor o conexión federada',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código interno del proveedor o conexión federada', nullable: false })
+  code!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Proveedor de identidad',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Proveedor de identidad', nullable: false })
+  providerType!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Familia de protocolo',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Familia de protocolo', nullable: false })
+  protocolFamily!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Versión concreta del protocolo',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Versión concreta del protocolo', nullable: false })
+  protocolVersion!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Issuer o entidad emisora',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Issuer o entidad emisora', nullable: true })
+  issuer?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'URL de autorización',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'URL de autorización', nullable: true })
+  authorizationUrl?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'URL de obtención de token',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'URL de obtención de token', nullable: true })
+  tokenUrl?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'URL de JWKS o claves',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'URL de JWKS o claves', nullable: true })
+  jwksUrl?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'URL de userinfo o perfil',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'URL de userinfo o perfil', nullable: true })
+  userInfoUrl?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Client id o identificador del RP/SP',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Client id o identificador del RP/SP', nullable: false })
+  clientId!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Referencia segura al secreto',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Referencia segura al secreto', nullable: true })
+  clientSecretRef?: string = '';
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si la integración está habilitada',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si la integración está habilitada', nullable: false })
+  enabled!: boolean;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Política de mapeo de claims',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Política de mapeo de claims', nullable: true })
+  claimMappingPolicy?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del proveedor federado',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del proveedor federado', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseIdentityFederationDto>) {

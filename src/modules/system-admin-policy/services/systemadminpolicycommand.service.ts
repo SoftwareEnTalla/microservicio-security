@@ -115,7 +115,23 @@ export class SystemAdminPolicyCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: admin-policy-must-have-action
+      // Toda política o auditoría administrativa debe definir acción.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'actionType') === undefined || this.dslValue(entityData, currentData, inputData, 'actionType') === null || (typeof this.dslValue(entityData, currentData, inputData, 'actionType') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'actionType')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'actionType')) && this.dslValue(entityData, currentData, inputData, 'actionType').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'actionType') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'actionType')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'actionType')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'actionType'))).length === 0)))) {
+        throw new Error('ADMIN_POLICY_001: La política administrativa requiere actionType');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: admin-policy-must-have-action
+      // Toda política o auditoría administrativa debe definir acción.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'actionType') === undefined || this.dslValue(entityData, currentData, inputData, 'actionType') === null || (typeof this.dslValue(entityData, currentData, inputData, 'actionType') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'actionType')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'actionType')) && this.dslValue(entityData, currentData, inputData, 'actionType').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'actionType') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'actionType')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'actionType')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'actionType'))).length === 0)))) {
+        throw new Error('ADMIN_POLICY_001: La política administrativa requiere actionType');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

@@ -37,7 +37,8 @@ import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { plainToInstance } from 'class-transformer';
 
 
-
+@Index('idx_authentication_user_status', ['userId', 'authStatus'])
+@Index('idx_authentication_identifier', ['loginIdentifier'])
 @ChildEntity('authentication')
 @ObjectType()
 export class Authentication extends BaseEntity {
@@ -62,10 +63,133 @@ export class Authentication extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, default: "Sin descripción", comment: 'Este es un campo para describir la instancia Authentication' })
   private description!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Usuario autenticado o que intenta autenticarse',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Usuario autenticado o que intenta autenticarse', nullable: false })
+  @Column({ type: 'uuid', nullable: false, comment: 'Usuario autenticado o que intenta autenticarse' })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Identificador usado en el login',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Identificador usado en el login', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 150, comment: 'Identificador usado en el login' })
+  loginIdentifier!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Método de autenticación utilizado',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Método de autenticación utilizado', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, default: 'LOCAL_PASSWORD', comment: 'Método de autenticación utilizado' })
+  authMethod!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Resultado del proceso de autenticación',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Resultado del proceso de autenticación', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, default: 'PENDING', comment: 'Resultado del proceso de autenticación' })
+  authStatus!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Motivo del fallo si aplica',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Motivo del fallo si aplica', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 150, comment: 'Motivo del fallo si aplica' })
+  failureReason?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Dirección IP del intento',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Dirección IP del intento', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 64, comment: 'Dirección IP del intento' })
+  ipAddress?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Huella del dispositivo',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Huella del dispositivo', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 180, comment: 'Huella del dispositivo' })
+  deviceFingerprint?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Cadena user-agent',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Cadena user-agent', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 255, comment: 'Cadena user-agent' })
+  userAgent?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'ACLs resueltas devueltas al autenticarse',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'ACLs resueltas devueltas al autenticarse', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'ACLs resueltas devueltas al autenticarse' })
+  authenticatedUserAcls?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: false,
+    description: 'Momento del evento de autenticación',
+  })
+  @IsDate()
+  @IsNotEmpty()
+  @Field(() => Date, { description: 'Momento del evento de autenticación', nullable: false })
+  @Column({ type: 'timestamp', nullable: false, comment: 'Momento del evento de autenticación' })
+  occurredAt!: Date;
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos operativos del evento de autenticación',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos operativos del evento de autenticación', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Metadatos operativos del evento de autenticación' })
+  metadata?: Record<string, any> = {};
 
   protected executeDslLifecycle(): void {
-
+    // Rule: successful-authentication-must-return-acls
+    // Una autenticación exitosa debe devolver ACLs resueltas.
+    if (!(this.authStatus === 'SUCCEEDED' && !(this.authenticatedUserAcls === undefined || this.authenticatedUserAcls === null || (typeof this.authenticatedUserAcls === 'string' && String(this.authenticatedUserAcls).trim() === '') || (Array.isArray(this.authenticatedUserAcls) && this.authenticatedUserAcls.length === 0) || (typeof this.authenticatedUserAcls === 'object' && !Array.isArray(this.authenticatedUserAcls) && Object.prototype.toString.call(this.authenticatedUserAcls) === '[object Object]' && Object.keys(Object(this.authenticatedUserAcls)).length === 0)))) {
+      throw new Error('AUTH_001: La autenticación exitosa debe devolver ACLs');
+    }
   }
 
   // Relación con BaseEntity (opcional, si aplica)

@@ -107,7 +107,55 @@ export class BaseSecurityCustomerDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Referencia al user canónico',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Referencia al user canónico', nullable: false })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Nivel de riesgo del customer',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Nivel de riesgo del customer', nullable: false })
+  riskLevel!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Referencia externa del customer',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Referencia externa del customer', nullable: true })
+  externalReference?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Medios de pago asociados al customer',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Medios de pago asociados al customer', nullable: true })
+  paymentMethods?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del customer en security',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del customer en security', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseSecurityCustomerDto>) {

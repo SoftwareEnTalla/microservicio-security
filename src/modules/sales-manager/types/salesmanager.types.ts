@@ -31,7 +31,7 @@
 
 import { ObjectType, Field } from "@nestjs/graphql";
 import { GQResponseBase } from "src/common/types/common.types";
-import { SalesManager } from "../entities/salesmanager.entity";
+import { SalesManager } from "../entities/sales-manager.entity";
 import { ApiProperty } from "@nestjs/swagger";
 
 @ObjectType({ description: "Respuesta de salesmanager" })

@@ -107,7 +107,115 @@ export class BaseMfaTotpDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Usuario dueño de la configuración MFA',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Usuario dueño de la configuración MFA', nullable: false })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si MFA está habilitado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si MFA está habilitado', nullable: false })
+  mfaEnabled!: boolean;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Modo de MFA',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Modo de MFA', nullable: false })
+  mfaMode!: string;
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si TOTP está habilitado',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si TOTP está habilitado', nullable: false })
+  totpEnabled!: boolean;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Referencia segura al secreto TOTP',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Referencia segura al secreto TOTP', nullable: true })
+  totpSecretRef?: string = '';
+
+  @ApiProperty({
+    type: () => Number,
+    nullable: false,
+    description: 'Versión del set de códigos de recuperación',
+  })
+  @IsInt()
+  @IsNotEmpty()
+  @Field(() => Int, { description: 'Versión del set de códigos de recuperación', nullable: false })
+  recoveryCodesVersion!: number;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado del reto MFA',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado del reto MFA', nullable: false })
+  challengeStatus!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Tipo de challenge MFA',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Tipo de challenge MFA', nullable: true })
+  challengeType?: string = '';
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Última verificación exitosa',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Última verificación exitosa', nullable: true })
+  verifiedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Último uso de MFA',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Último uso de MFA', nullable: true })
+  lastUsedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos de configuración MFA',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos de configuración MFA', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseMfaTotpDto>) {

@@ -115,7 +115,29 @@ export class UserCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: user-must-accept-terms
+      // Un usuario no puede crearse sin aceptar términos y condiciones.
+      if (!(this.dslValue(entityData, currentData, inputData, 'termsAccepted') === true)) {
+        throw new Error('USER_001: El usuario debe aceptar términos y condiciones');
+      }
 
+      // Regla de servicio: user-must-have-identifier-value
+      // Todo usuario debe tener un identificador principal no vacío.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'identifierValue') === undefined || this.dslValue(entityData, currentData, inputData, 'identifierValue') === null || (typeof this.dslValue(entityData, currentData, inputData, 'identifierValue') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'identifierValue')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'identifierValue')) && this.dslValue(entityData, currentData, inputData, 'identifierValue').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'identifierValue') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'identifierValue')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'identifierValue')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'identifierValue'))).length === 0)))) {
+        throw new Error('USER_002: El usuario requiere identificador principal');
+      }
+
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: user-must-have-identifier-value
+      // Todo usuario debe tener un identificador principal no vacío.
+      if (!(!(this.dslValue(entityData, currentData, inputData, 'identifierValue') === undefined || this.dslValue(entityData, currentData, inputData, 'identifierValue') === null || (typeof this.dslValue(entityData, currentData, inputData, 'identifierValue') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'identifierValue')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'identifierValue')) && this.dslValue(entityData, currentData, inputData, 'identifierValue').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'identifierValue') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'identifierValue')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'identifierValue')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'identifierValue'))).length === 0)))) {
+        throw new Error('USER_002: El usuario requiere identificador principal');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }

@@ -107,7 +107,115 @@ export class BaseRbacAclDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código del rol',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código del rol', nullable: false })
+  roleCode!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Nombre descriptivo del rol',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Nombre descriptivo del rol', nullable: false })
+  roleName!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código del permiso',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código del permiso', nullable: false })
+  permissionCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Recurso protegido',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Recurso protegido', nullable: false })
+  resource!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Acción autorizada',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Acción autorizada', nullable: false })
+  action!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Ámbito del permiso',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Ámbito del permiso', nullable: true })
+  scope?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Efecto del permiso',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Efecto del permiso', nullable: false })
+  effect!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Usuario al que aplica la ACL si está materializada',
+  })
+  @IsUUID()
+  @IsOptional()
+  @Field(() => String, { description: 'Usuario al que aplica la ACL si está materializada', nullable: true })
+  userId?: string;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de asignación',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de asignación', nullable: true })
+  assignedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de revocación',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de revocación', nullable: true })
+  revokedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos de autorización',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos de autorización', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseRbacAclDto>) {

@@ -107,7 +107,105 @@ export class BaseUserProfileDto {
   @Field(() => Boolean, { nullable: false })
   isActive: boolean = false; // Por defecto, el objeto no está activo
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Referencia al usuario dueño del perfil',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Referencia al usuario dueño del perfil', nullable: false })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Nombre',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Nombre', nullable: true })
+  firstName?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Apellidos',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Apellidos', nullable: true })
+  lastName?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'URL de la foto de perfil',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'URL de la foto de perfil', nullable: true })
+  profilePhotoUrl?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Idioma preferido',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Idioma preferido', nullable: true })
+  language?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'País',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'País', nullable: true })
+  country?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Provincia o estado',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Provincia o estado', nullable: true })
+  stateOrProvince?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Ciudad',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Ciudad', nullable: true })
+  city?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Dirección física',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Dirección física', nullable: true })
+  address?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del perfil',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del perfil', nullable: true })
+  metadata?: Record<string, any> = {};
 
   // Constructor
   constructor(partial: Partial<BaseUserProfileDto>) {

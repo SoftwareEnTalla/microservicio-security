@@ -37,7 +37,10 @@ import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
 import { plainToInstance } from 'class-transformer';
 
 
-
+@Index('idx_security_merchant_user_id', ['userId'], { unique: true })
+@Index('idx_security_merchant_code', ['merchantCode'], { unique: true })
+@Unique('uq_security_merchant_user_id', ['userId'])
+@Unique('uq_security_merchant_code', ['merchantCode'])
 @ChildEntity('securitymerchant')
 @ObjectType()
 export class SecurityMerchant extends BaseEntity {
@@ -62,10 +65,111 @@ export class SecurityMerchant extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, default: "Sin descripción", comment: 'Este es un campo para describir la instancia SecurityMerchant' })
   private description!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Referencia al user canónico',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Referencia al user canónico', nullable: false })
+  @Column({ type: 'uuid', nullable: false, unique: true, comment: 'Referencia al user canónico' })
+  userId!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código único del comercio',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código único del comercio', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 80, unique: true, comment: 'Código único del comercio' })
+  merchantCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Representante legal',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Representante legal', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 180, comment: 'Representante legal' })
+  legalRepresentative?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Razón social o entidad jurídica',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Razón social o entidad jurídica', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 180, comment: 'Razón social o entidad jurídica' })
+  legalEntityName?: string = '';
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Medios de cobro del merchant',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Medios de cobro del merchant', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Medios de cobro del merchant' })
+  collectionMethods?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Cuentas bancarias del merchant',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Cuentas bancarias del merchant', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Cuentas bancarias del merchant' })
+  bankAccounts?: Record<string, any> = {};
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Estado de aprobación operativa',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Estado de aprobación operativa', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 255, default: 'PENDING', comment: 'Estado de aprobación operativa' })
+  approvalStatus!: string;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de aprobación',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de aprobación', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, comment: 'Fecha de aprobación' })
+  approvedAt?: Date = new Date();
+
+  @ApiProperty({
+    type: () => Object,
+    nullable: true,
+    description: 'Metadatos del merchant',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => String, { description: 'Metadatos del merchant', nullable: true })
+  @Column({ type: 'json', nullable: true, comment: 'Metadatos del merchant' })
+  metadata?: Record<string, any> = {};
 
   protected executeDslLifecycle(): void {
-
+    // Rule: approved-merchant-must-have-code
+    // Todo merchant aprobado debe tener código comercial.
+    if (!(!(this.merchantCode === undefined || this.merchantCode === null || (typeof this.merchantCode === 'string' && String(this.merchantCode).trim() === '') || (Array.isArray(this.merchantCode) && this.merchantCode.length === 0) || (typeof this.merchantCode === 'object' && !Array.isArray(this.merchantCode) && Object.prototype.toString.call(this.merchantCode) === '[object Object]' && Object.keys(Object(this.merchantCode)).length === 0)))) {
+      throw new Error('SEC_MERCHANT_001: El merchant requiere merchantCode');
+    }
   }
 
   // Relación con BaseEntity (opcional, si aplica)

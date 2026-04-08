@@ -115,7 +115,23 @@ export class MfaTotpCommandService implements OnModuleInit {
     const entityData = ((entity ?? {}) as Record<string, any>);
     const currentData = ((current ?? {}) as Record<string, any>);
     const pendingEvents: BaseEvent[] = [];
+    if (operation === 'create') {
+      // Regla de servicio: totp-enabled-requires-secret
+      // No se puede habilitar TOTP sin una referencia válida al secreto.
+      if (!(this.dslValue(entityData, currentData, inputData, 'totpEnabled') === true && !(this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === undefined || this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === null || (typeof this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')) && this.dslValue(entityData, currentData, inputData, 'totpSecretRef').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'totpSecretRef'))).length === 0)))) {
+        throw new Error('MFA_001: TOTP habilitado requiere secreto configurado');
+      }
 
+    }
+
+    if (operation === 'update') {
+      // Regla de servicio: totp-enabled-requires-secret
+      // No se puede habilitar TOTP sin una referencia válida al secreto.
+      if (!(this.dslValue(entityData, currentData, inputData, 'totpEnabled') === true && !(this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === undefined || this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === null || (typeof this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === 'string' && String(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')).trim() === '') || (Array.isArray(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')) && this.dslValue(entityData, currentData, inputData, 'totpSecretRef').length === 0) || (typeof this.dslValue(entityData, currentData, inputData, 'totpSecretRef') === 'object' && !Array.isArray(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')) && Object.prototype.toString.call(this.dslValue(entityData, currentData, inputData, 'totpSecretRef')) === '[object Object]' && Object.keys(Object(this.dslValue(entityData, currentData, inputData, 'totpSecretRef'))).length === 0)))) {
+        throw new Error('MFA_001: TOTP habilitado requiere secreto configurado');
+      }
+
+    }
     if (publishEvents) {
       await this.publishDslDomainEvents(pendingEvents);
     }
