@@ -1,6 +1,6 @@
 # SECURITY Microservice
 
-**Creation Date**: 2026-04-07
+**Creation Date**: 2026-04-11
 
 **Author**: Ing. Persy Morell Guerra e Ing. Dailyn García Dominguez (SoftwarEnTalla CEO)
 
