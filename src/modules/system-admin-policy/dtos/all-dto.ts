@@ -29,6 +29,7 @@
  */
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -194,7 +195,7 @@ export class BaseSystemAdminPolicyDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos de la política o auditoría', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos de la política o auditoría', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor
