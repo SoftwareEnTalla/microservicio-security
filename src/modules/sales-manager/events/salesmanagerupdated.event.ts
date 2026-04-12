@@ -29,29 +29,35 @@
  */
 
 
-import { BaseEvent, PayloadEvent } from './base.event';
+import { UpdateSalesManagerDto } from '../dtos/all-dto';
+import { SalesManager } from '../entities/sales-manager.entity';
+import { BaseEvent, PayloadEvent } from './base.event'; 
 import { v4 as uuidv4 } from "uuid";
 
 export class SalesManagerUpdatedEvent extends BaseEvent {
   constructor(
     public readonly aggregateId: string,
-    public readonly payload: PayloadEvent<any>
+    public readonly payload: PayloadEvent<UpdateSalesManagerDto|SalesManager>
   ) {
     super(aggregateId);
   }
 
-  static create(
-    instanceId: string,
-    instance: any,
-    userId: string,
-    correlationId?: string
-  ): SalesManagerUpdatedEvent {
-    return new SalesManagerUpdatedEvent(instanceId, {
-      instance,
-      metadata: {
-        initiatedBy: userId,
-        correlationId: correlationId || uuidv4(),
-      },
-    });
-  }
+  
+         // Método estático para construcción consistente del evento
+        static create(
+          instanceId: string,
+          instance: UpdateSalesManagerDto|SalesManager,
+          userId: string,
+          correlationId?: string
+        ): SalesManagerUpdatedEvent {
+          return new SalesManagerUpdatedEvent(instanceId, {
+            instance: instance,
+            metadata: {
+              initiatedBy: userId,
+              correlationId:correlationId || uuidv4(),
+            },
+          });
+        }
+        
+
 }
