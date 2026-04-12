@@ -29,6 +29,7 @@
  */
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -224,7 +225,7 @@ export class BaseSessionTokenDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'ACLs devueltas en refresh o revalidación', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'ACLs devueltas en refresh o revalidación', nullable: true })
   authenticatedUserAcls?: Record<string, any> = {};
 
   @ApiProperty({
@@ -234,7 +235,7 @@ export class BaseSessionTokenDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del token o sesión', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del token o sesión', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor

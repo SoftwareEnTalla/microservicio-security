@@ -34,6 +34,7 @@ import { CreateSessionTokenDto, UpdateSessionTokenDto, DeleteSessionTokenDto } f
 import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
+import GraphQLJSON from 'graphql-type-json';
 import { plainToInstance } from 'class-transformer';
 
 
@@ -193,7 +194,7 @@ export class SessionToken extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'ACLs devueltas en refresh o revalidación', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'ACLs devueltas en refresh o revalidación', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'ACLs devueltas en refresh o revalidación' })
   authenticatedUserAcls?: Record<string, any> = {};
 
@@ -204,7 +205,7 @@ export class SessionToken extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del token o sesión', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del token o sesión', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Metadatos del token o sesión' })
   metadata?: Record<string, any> = {};
 
