@@ -45,6 +45,7 @@
     "dotenv": "^16.4.7",
     "esm": "^3.2.25",
     "graphql": "^16.10.0",
+    "graphql-type-json": "^0.3.2",
     "https-proxy-agent": "^7.0.6",
     "i18n": "^0.15.1",
     "joi": "^17.13.3",
