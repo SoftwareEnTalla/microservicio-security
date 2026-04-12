@@ -4,6 +4,16 @@
 
 **Author**: Ing. Persy Morell Guerra e Ing. Dailyn García Dominguez (SoftwarEnTalla CEO)
 
+## Contexto funcional reciente
+
+`security-service` contiene especializaciones sincronizadas desde otros bounded contexts usando sagas cross-context.
+
+Módulos reforzados:
+
+- `security-customer`
+- `security-merchant`
+- `sales-manager`
+
 ## Microservice Structure
 
 ```plaintext
