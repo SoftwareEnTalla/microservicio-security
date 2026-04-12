@@ -52,7 +52,8 @@ import { GetSecurityCustomerByIdHandler } from "../queries/handlers/getsecurityc
 import { GetSecurityCustomerByFieldHandler } from "../queries/handlers/getsecuritycustomerbyfield.handler";
 import { GetAllSecurityCustomerHandler } from "../queries/handlers/getallsecuritycustomer.handler";
 import { SecurityCustomerCrudSaga } from "../sagas/securitycustomer-crud.saga";
-import { EVENT_TOPICS } from "../events/event-registry";
+import { SecurityCustomerSyncCreatedSaga } from "../sagas/security-customer-sync-created.saga";
+import { SecurityCustomerSyncUpdatedSaga } from "../sagas/security-customer-sync-updated.saga";import { EVENT_TOPICS } from "../events/event-registry";
 
 //Interceptors
 import { SecurityCustomerInterceptor } from "../interceptors/securitycustomer.interceptor";
@@ -93,7 +94,8 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     GetSecurityCustomerByFieldHandler,
     GetAllSecurityCustomerHandler,
     SecurityCustomerCrudSaga,
-    //Configurations
+    SecurityCustomerSyncCreatedSaga,
+    SecurityCustomerSyncUpdatedSaga,    //Configurations
     {
       provide: 'EVENT_SOURCING_CONFIG',
       useFactory: () => ({

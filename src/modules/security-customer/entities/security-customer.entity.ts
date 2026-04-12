@@ -34,6 +34,7 @@ import { CreateSecurityCustomerDto, UpdateSecurityCustomerDto, DeleteSecurityCus
 import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
+import GraphQLJSON from 'graphql-type-json';
 import { plainToInstance } from 'class-transformer';
 
 
@@ -103,7 +104,7 @@ export class SecurityCustomer extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Medios de pago asociados al customer', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Medios de pago asociados al customer', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Medios de pago asociados al customer' })
   paymentMethods?: Record<string, any> = {};
 
@@ -114,7 +115,7 @@ export class SecurityCustomer extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del customer en security', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del customer en security', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Metadatos del customer en security' })
   metadata?: Record<string, any> = {};
 

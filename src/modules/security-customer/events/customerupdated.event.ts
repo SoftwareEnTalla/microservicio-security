@@ -27,11 +27,31 @@
  *
  *
  */
-export * from "./securitycustomerdeleted.event"; 
-export * from "./securitycustomercreated.event";
-export * from "./securitycustomerupdated.event";
-export * from "./customercreated.event";
-export * from "./customerupdated.event";
-export * from "./event-registry";
-export * from "./base.event";
-export * from "./securitycustomer-failed.event";
+
+
+import { BaseEvent, PayloadEvent } from './base.event';
+import { v4 as uuidv4 } from "uuid";
+
+export class CustomerUpdatedEvent extends BaseEvent {
+  constructor(
+    public readonly aggregateId: string,
+    public readonly payload: PayloadEvent<any>
+  ) {
+    super(aggregateId);
+  }
+
+  static create(
+    instanceId: string,
+    instance: any,
+    userId: string,
+    correlationId?: string
+  ): CustomerUpdatedEvent {
+    return new CustomerUpdatedEvent(instanceId, {
+      instance,
+      metadata: {
+        initiatedBy: userId,
+        correlationId: correlationId || uuidv4(),
+      },
+    });
+  }
+}
