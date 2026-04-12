@@ -29,6 +29,7 @@
  */
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -214,7 +215,7 @@ export class BaseMfaTotpDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos de configuración MFA', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos de configuración MFA', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor

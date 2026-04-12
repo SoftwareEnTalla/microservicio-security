@@ -34,6 +34,7 @@ import { CreateMfaTotpDto, UpdateMfaTotpDto, DeleteMfaTotpDto } from '../dtos/al
 import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
+import GraphQLJSON from 'graphql-type-json';
 import { plainToInstance } from 'class-transformer';
 
 
@@ -180,7 +181,7 @@ export class MfaTotp extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos de configuración MFA', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos de configuración MFA', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Metadatos de configuración MFA' })
   metadata?: Record<string, any> = {};
 
