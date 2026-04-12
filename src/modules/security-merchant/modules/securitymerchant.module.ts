@@ -52,7 +52,8 @@ import { GetSecurityMerchantByIdHandler } from "../queries/handlers/getsecuritym
 import { GetSecurityMerchantByFieldHandler } from "../queries/handlers/getsecuritymerchantbyfield.handler";
 import { GetAllSecurityMerchantHandler } from "../queries/handlers/getallsecuritymerchant.handler";
 import { SecurityMerchantCrudSaga } from "../sagas/securitymerchant-crud.saga";
-import { EVENT_TOPICS } from "../events/event-registry";
+import { SecurityMerchantSyncCreatedSaga } from "../sagas/security-merchant-sync-created.saga";
+import { SecurityMerchantSyncUpdatedSaga } from "../sagas/security-merchant-sync-updated.saga";import { EVENT_TOPICS } from "../events/event-registry";
 
 //Interceptors
 import { SecurityMerchantInterceptor } from "../interceptors/securitymerchant.interceptor";
@@ -93,7 +94,8 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     GetSecurityMerchantByFieldHandler,
     GetAllSecurityMerchantHandler,
     SecurityMerchantCrudSaga,
-    //Configurations
+    SecurityMerchantSyncCreatedSaga,
+    SecurityMerchantSyncUpdatedSaga,    //Configurations
     {
       provide: 'EVENT_SOURCING_CONFIG',
       useFactory: () => ({

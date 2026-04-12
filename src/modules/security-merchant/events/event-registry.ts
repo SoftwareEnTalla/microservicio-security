@@ -33,6 +33,8 @@ import { BaseEvent } from './base.event';
 import { SecurityMerchantCreatedEvent } from './securitymerchantcreated.event';
 import { SecurityMerchantUpdatedEvent } from './securitymerchantupdated.event';
 import { SecurityMerchantDeletedEvent } from './securitymerchantdeleted.event';
+import { MerchantCreatedEvent } from './merchantcreated.event';
+import { MerchantUpdatedEvent } from './merchantupdated.event';
 
 export type RegisteredEventClass<T extends BaseEvent = BaseEvent> = new (
   aggregateId: string,
@@ -73,7 +75,8 @@ export const EVENT_DEFINITIONS: Record<string, RegisteredEventDefinition> = {
   'security-merchant-created': createEventDefinition('security-merchant-created', SecurityMerchantCreatedEvent, EVENT_DEFINITION_OVERRIDES['security-merchant-created']),
   'security-merchant-updated': createEventDefinition('security-merchant-updated', SecurityMerchantUpdatedEvent, EVENT_DEFINITION_OVERRIDES['security-merchant-updated']),
   'security-merchant-deleted': createEventDefinition('security-merchant-deleted', SecurityMerchantDeletedEvent, EVENT_DEFINITION_OVERRIDES['security-merchant-deleted']),
-
+  'merchant-created': createEventDefinition('merchant-created', MerchantCreatedEvent, EVENT_DEFINITION_OVERRIDES['merchant-created']),
+  'merchant-updated': createEventDefinition('merchant-updated', MerchantUpdatedEvent, EVENT_DEFINITION_OVERRIDES['merchant-updated']),
 };
 
 export const EVENT_REGISTRY: Record<string, RegisteredEventClass> = Object.fromEntries(
