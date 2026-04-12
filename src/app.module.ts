@@ -40,6 +40,7 @@ import { AppDataSource, initializeDatabase } from "./data-source";
 import { SecurityQueryController } from "./modules/security/controllers/securityquery.controller";
 import { GraphQLModule } from "@nestjs/graphql";
 import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
+import GraphQLJSON from "graphql-type-json";
 import { SecurityCommandService } from "./modules/security/services/securitycommand.service";
 import { SecurityQueryService } from "./modules/security/services/securityquery.service";
 import { CacheModule } from "@nestjs/cache-manager";
@@ -83,8 +84,6 @@ import { UserProfileQueryService } from "./modules/user-profile/services/userpro
 import { UserModule } from "./modules/user/modules/user.module";
 import { UserCommandService } from "./modules/user/services/usercommand.service";
 import { UserQueryService } from "./modules/user/services/userquery.service";
-
-//import GraphQLJSON from "graphql-type-json";
 
 /*
 //TODO unused for while dependencies
@@ -174,6 +173,7 @@ import LoggerService, { logger } from "@core/logs/logger";
             buildSchemaOptions: {
               dateScalarMode: "timestamp",
             },
+            resolvers: { JSON: GraphQLJSON },
           }),
         ]
       : []),

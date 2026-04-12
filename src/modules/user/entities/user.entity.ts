@@ -34,6 +34,7 @@ import { CreateUserDto, UpdateUserDto, DeleteUserDto } from '../dtos/all-dto';
 import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
+import GraphQLJSON from 'graphql-type-json';
 import { plainToInstance } from 'class-transformer';
 
 
@@ -261,7 +262,7 @@ export class User extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos adicionales del usuario', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos adicionales del usuario', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Metadatos adicionales del usuario' })
   metadata?: Record<string, any> = {};
 
