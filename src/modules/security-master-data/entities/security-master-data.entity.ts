@@ -34,6 +34,7 @@ import { CreateSecurityMasterDataDto, UpdateSecurityMasterDataDto, DeleteSecurit
 import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
+import GraphQLJSON from 'graphql-type-json';
 import { plainToInstance } from 'class-transformer';
 
 
@@ -115,7 +116,7 @@ export class SecurityMasterData extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del dato maestro', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del dato maestro', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Metadatos del dato maestro' })
   metadata?: Record<string, any> = {};
 
