@@ -29,6 +29,7 @@
  */
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -234,7 +235,7 @@ export class BaseIdentityFederationDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Política de mapeo de claims', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Política de mapeo de claims', nullable: true })
   claimMappingPolicy?: Record<string, any> = {};
 
   @ApiProperty({
@@ -244,7 +245,7 @@ export class BaseIdentityFederationDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del proveedor federado', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del proveedor federado', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor

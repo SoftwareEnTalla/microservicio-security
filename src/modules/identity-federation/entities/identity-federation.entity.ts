@@ -34,6 +34,7 @@ import { CreateIdentityFederationDto, UpdateIdentityFederationDto, DeleteIdentit
 import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, Float, Int, ObjectType } from "@nestjs/graphql";
+import GraphQLJSON from 'graphql-type-json';
 import { plainToInstance } from 'class-transformer';
 
 
@@ -202,7 +203,7 @@ export class IdentityFederation extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Política de mapeo de claims', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Política de mapeo de claims', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Política de mapeo de claims' })
   claimMappingPolicy?: Record<string, any> = {};
 
@@ -213,7 +214,7 @@ export class IdentityFederation extends BaseEntity {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del proveedor federado', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del proveedor federado', nullable: true })
   @Column({ type: 'json', nullable: true, comment: 'Metadatos del proveedor federado' })
   metadata?: Record<string, any> = {};
 
