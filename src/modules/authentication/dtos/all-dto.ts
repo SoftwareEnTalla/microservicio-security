@@ -110,13 +110,13 @@ export class BaseAuthenticationDto {
 
   @ApiProperty({
     type: () => String,
-    nullable: false,
-    description: 'Usuario autenticado o que intenta autenticarse',
+    nullable: true,
+    description: 'Usuario autenticado o que intenta autenticarse cuando puede resolverse internamente',
   })
   @IsUUID()
-  @IsNotEmpty()
-  @Field(() => String, { description: 'Usuario autenticado o que intenta autenticarse', nullable: false })
-  userId!: string;
+  @IsOptional()
+  @Field(() => String, { description: 'Usuario autenticado o que intenta autenticarse cuando puede resolverse internamente', nullable: true })
+  userId?: string;
 
   @ApiProperty({
     type: () => String,

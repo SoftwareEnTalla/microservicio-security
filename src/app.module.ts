@@ -84,6 +84,8 @@ import { UserProfileQueryService } from "./modules/user-profile/services/userpro
 import { UserModule } from "./modules/user/modules/user.module";
 import { UserCommandService } from "./modules/user/services/usercommand.service";
 import { UserQueryService } from "./modules/user/services/userquery.service";
+import { LoginModule } from "./modules/login/modules/login.module";
+import { LoginService } from "./modules/login/services/login.service";
 
 /*
 //TODO unused for while dependencies
@@ -159,6 +161,7 @@ import LoggerService, { logger } from "@core/logs/logger";
     SystemAdminPolicyModule,
     UserProfileModule,
     UserModule,    
+    LoginModule,
     /**
      * Módulo Logger de la aplicación
      */
@@ -267,7 +270,8 @@ export class SecurityAppModule implements OnModuleInit {
       UserProfileCommandService,
       UserProfileQueryService,
       UserCommandService,
-      UserQueryService,    
+      UserQueryService,
+      LoginService,
     ]);
     const loggerService = ServiceRegistry.getInstance().get(
       "LoggerService"

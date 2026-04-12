@@ -4,6 +4,16 @@
 
 **Author**: Ing. Persy Morell Guerra e Ing. Dailyn García Dominguez (SoftwarEnTalla CEO)
 
+## Novedades funcionales
+
+- módulo `login` para:
+	- autenticación con identificador + contraseña;
+	- inicio de sesión federado con proveedores externos configurados;
+	- refresh de sesión;
+	- logout.
+- registro desacoplado del resultado final del login en `authentication` mediante eventos internos y saga local.
+- emisión y rotación de continuidad de sesión apoyada en `session-token`.
+
 ## Microservice Structure
 
 ```plaintext

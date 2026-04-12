@@ -42,6 +42,7 @@ import { SessionTokenModule } from "@modules/session-token/modules/sessiontoken.
 import { SystemAdminPolicyModule } from "@modules/system-admin-policy/modules/systemadminpolicy.module";
 import { UserProfileModule } from "@modules/user-profile/modules/userprofile.module";
 import { UserModule } from "@modules/user/modules/user.module";
+import { LoginModule } from "@modules/login/modules/login.module";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { logger } from '@core/logs/logger';
 
@@ -96,7 +97,8 @@ try{
         SessionTokenModule,
         SystemAdminPolicyModule,
         UserProfileModule,
-        UserModule,/*, AuthModule, ReportsModule*/], // Lista todos los módulos
+        UserModule,
+        LoginModule,/*, AuthModule, ReportsModule*/], // Lista todos los módulos
         deepScanRoutes: true, // Escanea en profundidad
         ignoreGlobalPrefix: false, // Considera el prefijo global (api/)
         extraModels: [], // Añade esto

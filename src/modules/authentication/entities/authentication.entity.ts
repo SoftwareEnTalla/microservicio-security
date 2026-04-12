@@ -66,14 +66,14 @@ export class Authentication extends BaseEntity {
 
   @ApiProperty({
     type: () => String,
-    nullable: false,
-    description: 'Usuario autenticado o que intenta autenticarse',
+    nullable: true,
+    description: 'Usuario autenticado o que intenta autenticarse cuando puede resolverse internamente',
   })
   @IsUUID()
-  @IsNotEmpty()
-  @Field(() => String, { description: 'Usuario autenticado o que intenta autenticarse', nullable: false })
-  @Column({ type: 'uuid', nullable: false, comment: 'Usuario autenticado o que intenta autenticarse' })
-  userId!: string;
+  @IsOptional()
+  @Field(() => String, { description: 'Usuario autenticado o que intenta autenticarse cuando puede resolverse internamente', nullable: true })
+  @Column({ type: 'uuid', nullable: true, comment: 'Usuario autenticado o que intenta autenticarse cuando puede resolverse internamente' })
+  userId?: string;
 
   @ApiProperty({
     type: () => String,
