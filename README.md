@@ -1,18 +1,8 @@
 # SECURITY Microservice
 
-**Creation Date**: 2026-04-11
+**Creation Date**: 2026-04-12
 
 **Author**: Ing. Persy Morell Guerra e Ing. Dailyn García Dominguez (SoftwarEnTalla CEO)
-
-## Contexto funcional reciente
-
-`security-service` contiene especializaciones sincronizadas desde otros bounded contexts usando sagas cross-context.
-
-Módulos reforzados:
-
-- `security-customer`
-- `security-merchant`
-- `sales-manager`
 
 ## Microservice Structure
 
