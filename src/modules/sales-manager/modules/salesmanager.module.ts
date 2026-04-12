@@ -52,7 +52,8 @@ import { GetSalesManagerByIdHandler } from "../queries/handlers/getsalesmanagerb
 import { GetSalesManagerByFieldHandler } from "../queries/handlers/getsalesmanagerbyfield.handler";
 import { GetAllSalesManagerHandler } from "../queries/handlers/getallsalesmanager.handler";
 import { SalesManagerCrudSaga } from "../sagas/salesmanager-crud.saga";
-import { EVENT_TOPICS } from "../events/event-registry";
+import { SecuritySalesManagerSyncCreatedSaga } from "../sagas/security-sales-manager-sync-created.saga";
+import { SecuritySalesManagerSyncUpdatedSaga } from "../sagas/security-sales-manager-sync-updated.saga";import { EVENT_TOPICS } from "../events/event-registry";
 
 //Interceptors
 import { SalesManagerInterceptor } from "../interceptors/salesmanager.interceptor";
@@ -93,7 +94,8 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     GetSalesManagerByFieldHandler,
     GetAllSalesManagerHandler,
     SalesManagerCrudSaga,
-    //Configurations
+    SecuritySalesManagerSyncCreatedSaga,
+    SecuritySalesManagerSyncUpdatedSaga,    //Configurations
     {
       provide: 'EVENT_SOURCING_CONFIG',
       useFactory: () => ({

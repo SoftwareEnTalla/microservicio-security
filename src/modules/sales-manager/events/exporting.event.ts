@@ -30,7 +30,8 @@
 export * from "./salesmanagerdeleted.event"; 
 export * from "./salesmanagercreated.event";
 export * from "./salesmanagerupdated.event";
-
+export * from "./salesmanagercreated.event";
+export * from "./salesmanagerupdated.event";
 export * from "./event-registry";
 export * from "./base.event";
 export * from "./salesmanager-failed.event";

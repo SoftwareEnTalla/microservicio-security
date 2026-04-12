@@ -29,6 +29,7 @@
  */
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -154,7 +155,7 @@ export class BaseSalesManagerDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Contratos o acuerdos con merchants', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Contratos o acuerdos con merchants', nullable: true })
   merchantContracts?: Record<string, any> = {};
 
   @ApiProperty({
@@ -174,7 +175,7 @@ export class BaseSalesManagerDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del sales manager', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del sales manager', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor

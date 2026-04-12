@@ -33,6 +33,8 @@ import { BaseEvent } from './base.event';
 import { SalesManagerCreatedEvent } from './salesmanagercreated.event';
 import { SalesManagerUpdatedEvent } from './salesmanagerupdated.event';
 import { SalesManagerDeletedEvent } from './salesmanagerdeleted.event';
+import { SalesManagerCreatedEvent } from './salesmanagercreated.event';
+import { SalesManagerUpdatedEvent } from './salesmanagerupdated.event';
 
 export type RegisteredEventClass<T extends BaseEvent = BaseEvent> = new (
   aggregateId: string,
@@ -73,7 +75,8 @@ export const EVENT_DEFINITIONS: Record<string, RegisteredEventDefinition> = {
   'sales-manager-created': createEventDefinition('sales-manager-created', SalesManagerCreatedEvent, EVENT_DEFINITION_OVERRIDES['sales-manager-created']),
   'sales-manager-updated': createEventDefinition('sales-manager-updated', SalesManagerUpdatedEvent, EVENT_DEFINITION_OVERRIDES['sales-manager-updated']),
   'sales-manager-deleted': createEventDefinition('sales-manager-deleted', SalesManagerDeletedEvent, EVENT_DEFINITION_OVERRIDES['sales-manager-deleted']),
-
+  'sales-manager-created': createEventDefinition('sales-manager-created', SalesManagerCreatedEvent, EVENT_DEFINITION_OVERRIDES['sales-manager-created']),
+  'sales-manager-updated': createEventDefinition('sales-manager-updated', SalesManagerUpdatedEvent, EVENT_DEFINITION_OVERRIDES['sales-manager-updated']),
 };
 
 export const EVENT_REGISTRY: Record<string, RegisteredEventClass> = Object.fromEntries(

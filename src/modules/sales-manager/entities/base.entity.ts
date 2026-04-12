@@ -34,7 +34,7 @@ import { IsBoolean, IsDate, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, ObjectType } from "@nestjs/graphql";
 
-@Entity('base_entity')  // 🔹 Necesario para que TypeORM la registre como entidad
+@Entity('sales_manager_base_entity')  // 🔹 Necesario para que TypeORM la registre como entidad
 @TableInheritance({ column: { type: "varchar", name: "type" } }) // 🔹 Permite herencia en entidades hijas
 @ObjectType()
 export abstract class BaseEntity {
