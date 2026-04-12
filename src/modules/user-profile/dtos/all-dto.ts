@@ -29,6 +29,7 @@
  */
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import GraphQLJSON from 'graphql-type-json';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -204,7 +205,7 @@ export class BaseUserProfileDto {
   })
   @IsObject()
   @IsOptional()
-  @Field(() => String, { description: 'Metadatos del perfil', nullable: true })
+  @Field(() => GraphQLJSON, { description: 'Metadatos del perfil', nullable: true })
   metadata?: Record<string, any> = {};
 
   // Constructor
