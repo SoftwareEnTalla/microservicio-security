@@ -34,6 +34,7 @@ import { RbacAclCommandController } from "../controllers/rbacaclcommand.controll
 import { RbacAclQueryController } from "../controllers/rbacaclquery.controller";
 import { RbacAclCommandService } from "../services/rbacaclcommand.service";
 import { RbacAclQueryService } from "../services/rbacaclquery.service";
+
 import { RbacAclCommandRepository } from "../repositories/rbacaclcommand.repository";
 import { RbacAclQueryRepository } from "../repositories/rbacaclquery.repository";
 import { RbacAclRepository } from "../repositories/rbacacl.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     RbacAclQueryService,
     RbacAclCommandService,
+  
     //Repositories
     RbacAclCommandRepository,
     RbacAclQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     RbacAclQueryService,
     RbacAclCommandService,
+  
     //Repositories
     RbacAclCommandRepository,
     RbacAclQueryRepository,
