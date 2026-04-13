@@ -39,6 +39,8 @@ export class MfaTotpResponse<T extends MfaTotp> extends GQResponseBase {
   @ApiProperty({ type: MfaTotp,nullable:false,description:"Datos de respuesta de MfaTotp" })
   @Field(() => MfaTotp, { description: "Instancia de MfaTotp", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de mfatotps" })
