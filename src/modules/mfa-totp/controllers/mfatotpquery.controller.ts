@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { MfaTotpQueryService } from "../services/mfatotpquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { MfaTotpResponse, MfaTotpsResponse } from "../types/mfatotp.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { MfaTotp } from "../entities/mfa-totp.entity";
+import { MfaTotpAuthGuard } from "../guards/mfatotpauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { MfaTotpDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("MfaTotp Query")
+@UseGuards(MfaTotpAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("mfatotps/query")
 export class MfaTotpQueryController {
   #logger = new Logger(MfaTotpQueryController.name);
