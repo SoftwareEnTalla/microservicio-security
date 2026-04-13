@@ -34,6 +34,7 @@ import { SecurityCommandController } from "../controllers/securitycommand.contro
 import { SecurityQueryController } from "../controllers/securityquery.controller";
 import { SecurityCommandService } from "../services/securitycommand.service";
 import { SecurityQueryService } from "../services/securityquery.service";
+
 import { SecurityCommandRepository } from "../repositories/securitycommand.repository";
 import { SecurityQueryRepository } from "../repositories/securityquery.repository";
 import { SecurityRepository } from "../repositories/security.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityQueryService,
     SecurityCommandService,
+  
     //Repositories
     SecurityCommandRepository,
     SecurityQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityQueryService,
     SecurityCommandService,
+  
     //Repositories
     SecurityCommandRepository,
     SecurityQueryRepository,
