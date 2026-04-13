@@ -34,6 +34,7 @@ import { MfaTotpCommandController } from "../controllers/mfatotpcommand.controll
 import { MfaTotpQueryController } from "../controllers/mfatotpquery.controller";
 import { MfaTotpCommandService } from "../services/mfatotpcommand.service";
 import { MfaTotpQueryService } from "../services/mfatotpquery.service";
+
 import { MfaTotpCommandRepository } from "../repositories/mfatotpcommand.repository";
 import { MfaTotpQueryRepository } from "../repositories/mfatotpquery.repository";
 import { MfaTotpRepository } from "../repositories/mfatotp.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     MfaTotpQueryService,
     MfaTotpCommandService,
+  
     //Repositories
     MfaTotpCommandRepository,
     MfaTotpQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     MfaTotpQueryService,
     MfaTotpCommandService,
+  
     //Repositories
     MfaTotpCommandRepository,
     MfaTotpQueryRepository,
