@@ -1,13 +1,33 @@
 DO $$
+DECLARE
+  canonical_email text := '${SQL:SA_EMAIL}';
+  canonical_password_hash text := '${SQL_SHA256:SA_PWD}';
+  canonical_metadata json := '{"acls":{"role":"SUPER_ADMIN","permissions":["*"]}}'::json;
+  admin_user_id uuid;
 BEGIN
-  IF EXISTS (
-    SELECT 1
-    FROM user_base_entity
-    WHERE email = '${SQL:SA_EMAIL}'
-       OR "identifierValue" = '${SQL:SA_EMAIL}'
-       OR username = '${SQL:SA_EMAIL}'
-      OR code = 'security-super-admin'
-  ) THEN
+  SELECT id
+  INTO admin_user_id
+  FROM user_base_entity
+  WHERE code = 'security-super-admin'
+     OR email = canonical_email
+     OR "identifierValue" = canonical_email
+     OR username = canonical_email
+  ORDER BY
+    CASE WHEN code = 'security-super-admin' THEN 0 ELSE 1 END,
+    "creationDate" ASC NULLS FIRST,
+    id ASC
+  LIMIT 1;
+
+  IF admin_user_id IS NOT NULL THEN
+    DELETE FROM user_base_entity
+    WHERE id <> admin_user_id
+      AND (
+        code = 'security-super-admin'
+        OR email = canonical_email
+        OR "identifierValue" = canonical_email
+        OR username = canonical_email
+      );
+
     UPDATE user_base_entity
     SET
       type = 'user',
@@ -17,25 +37,22 @@ BEGIN
       name = 'Super Admin',
       description = 'Usuario inicial generado durante el despliegue del microservicio security',
       code = 'security-super-admin',
-      username = '${SQL:SA_EMAIL}',
-      email = '${SQL:SA_EMAIL}',
-      phone = '',
-      "passwordHash" = '${SQL_SHA256:SA_PWD}',
+      username = canonical_email,
+      email = canonical_email,
+      phone = NULL,
+      "passwordHash" = canonical_password_hash,
       "identifierType" = 'EMAIL',
-      "identifierValue" = '${SQL:SA_EMAIL}',
+      "identifierValue" = canonical_email,
       "accountStatus" = 'ACTIVE',
       "userType" = 'ADMIN',
       "termsAccepted" = true,
-      "termsAcceptedAt" = NOW(),
+      "termsAcceptedAt" = COALESCE("termsAcceptedAt", NOW()),
       "passwordChangedAt" = NOW(),
       "mfaEnabled" = false,
       "totpEnabled" = false,
       "federatedOnly" = false,
-      metadata = '{"acls":{"role":"SUPER_ADMIN","permissions":["*"]}}'::json
-    WHERE email = '${SQL:SA_EMAIL}'
-       OR "identifierValue" = '${SQL:SA_EMAIL}'
-       OR username = '${SQL:SA_EMAIL}'
-       OR code = 'security-super-admin';
+      metadata = canonical_metadata
+    WHERE id = admin_user_id;
   ELSE
     INSERT INTO user_base_entity (
       id,
@@ -72,12 +89,12 @@ BEGIN
       'Super Admin',
       'Usuario inicial generado durante el despliegue del microservicio security',
       'security-super-admin',
-      '${SQL:SA_EMAIL}',
-      '${SQL:SA_EMAIL}',
-      '',
-      '${SQL_SHA256:SA_PWD}',
+      canonical_email,
+      canonical_email,
+      NULL,
+      canonical_password_hash,
       'EMAIL',
-      '${SQL:SA_EMAIL}',
+      canonical_email,
       'ACTIVE',
       'ADMIN',
       true,
@@ -86,7 +103,7 @@ BEGIN
       false,
       false,
       false,
-      '{"acls":{"role":"SUPER_ADMIN","permissions":["*"]}}'::json
+      canonical_metadata
     );
   END IF;
 END $$;
