@@ -34,6 +34,7 @@ import { UserProfileCommandController } from "../controllers/userprofilecommand.
 import { UserProfileQueryController } from "../controllers/userprofilequery.controller";
 import { UserProfileCommandService } from "../services/userprofilecommand.service";
 import { UserProfileQueryService } from "../services/userprofilequery.service";
+
 import { UserProfileCommandRepository } from "../repositories/userprofilecommand.repository";
 import { UserProfileQueryRepository } from "../repositories/userprofilequery.repository";
 import { UserProfileRepository } from "../repositories/userprofile.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     UserProfileQueryService,
     UserProfileCommandService,
+  
     //Repositories
     UserProfileCommandRepository,
     UserProfileQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     UserProfileQueryService,
     UserProfileCommandService,
+  
     //Repositories
     UserProfileCommandRepository,
     UserProfileQueryRepository,
