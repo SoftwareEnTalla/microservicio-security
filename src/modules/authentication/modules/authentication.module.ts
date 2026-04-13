@@ -52,7 +52,9 @@ import { GetAuthenticationByIdHandler } from "../queries/handlers/getauthenticat
 import { GetAuthenticationByFieldHandler } from "../queries/handlers/getauthenticationbyfield.handler";
 import { GetAllAuthenticationHandler } from "../queries/handlers/getallauthentication.handler";
 import { AuthenticationCrudSaga } from "../sagas/authentication-crud.saga";
-import { EVENT_TOPICS } from "../events/event-registry";
+import { AuthenticationRecordLoginSucceededSaga } from "../sagas/authentication-record-login-succeeded.saga";
+import { AuthenticationRecordLoginFailedSaga } from "../sagas/authentication-record-login-failed.saga";
+import { AuthenticationRecordLoginRefreshedSaga } from "../sagas/authentication-record-login-refreshed.saga";import { EVENT_TOPICS } from "../events/event-registry";
 
 //Interceptors
 import { AuthenticationInterceptor } from "../interceptors/authentication.interceptor";
@@ -93,7 +95,9 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     GetAuthenticationByFieldHandler,
     GetAllAuthenticationHandler,
     AuthenticationCrudSaga,
-    //Configurations
+    AuthenticationRecordLoginSucceededSaga,
+    AuthenticationRecordLoginFailedSaga,
+    AuthenticationRecordLoginRefreshedSaga,    //Configurations
     {
       provide: 'EVENT_SOURCING_CONFIG',
       useFactory: () => ({

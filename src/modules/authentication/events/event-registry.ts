@@ -33,6 +33,9 @@ import { BaseEvent } from './base.event';
 import { AuthenticationCreatedEvent } from './authenticationcreated.event';
 import { AuthenticationUpdatedEvent } from './authenticationupdated.event';
 import { AuthenticationDeletedEvent } from './authenticationdeleted.event';
+import { LoginSucceededEvent } from './loginsucceeded.event';
+import { LoginFailedEvent } from './loginfailed.event';
+import { LoginRefreshedEvent } from './loginrefreshed.event';
 
 export type RegisteredEventClass<T extends BaseEvent = BaseEvent> = new (
   aggregateId: string,
@@ -73,7 +76,9 @@ export const EVENT_DEFINITIONS: Record<string, RegisteredEventDefinition> = {
   'authentication-created': createEventDefinition('authentication-created', AuthenticationCreatedEvent, EVENT_DEFINITION_OVERRIDES['authentication-created']),
   'authentication-updated': createEventDefinition('authentication-updated', AuthenticationUpdatedEvent, EVENT_DEFINITION_OVERRIDES['authentication-updated']),
   'authentication-deleted': createEventDefinition('authentication-deleted', AuthenticationDeletedEvent, EVENT_DEFINITION_OVERRIDES['authentication-deleted']),
-
+  'login-succeeded': createEventDefinition('login-succeeded', LoginSucceededEvent, EVENT_DEFINITION_OVERRIDES['login-succeeded']),
+  'login-failed': createEventDefinition('login-failed', LoginFailedEvent, EVENT_DEFINITION_OVERRIDES['login-failed']),
+  'login-refreshed': createEventDefinition('login-refreshed', LoginRefreshedEvent, EVENT_DEFINITION_OVERRIDES['login-refreshed']),
 };
 
 export const EVENT_REGISTRY: Record<string, RegisteredEventClass> = Object.fromEntries(

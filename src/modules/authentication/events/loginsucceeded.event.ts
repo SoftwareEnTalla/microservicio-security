@@ -27,12 +27,31 @@
  *
  *
  */
-export * from "./authenticationdeleted.event"; 
-export * from "./authenticationcreated.event";
-export * from "./authenticationupdated.event";
-export * from "./loginsucceeded.event";
-export * from "./loginfailed.event";
-export * from "./loginrefreshed.event";
-export * from "./event-registry";
-export * from "./base.event";
-export * from "./authentication-failed.event";
+
+
+import { BaseEvent, PayloadEvent } from './base.event';
+import { v4 as uuidv4 } from "uuid";
+
+export class LoginSucceededEvent extends BaseEvent {
+  constructor(
+    public readonly aggregateId: string,
+    public readonly payload: PayloadEvent<any>
+  ) {
+    super(aggregateId);
+  }
+
+  static create(
+    instanceId: string,
+    instance: any,
+    userId: string,
+    correlationId?: string
+  ): LoginSucceededEvent {
+    return new LoginSucceededEvent(instanceId, {
+      instance,
+      metadata: {
+        initiatedBy: userId,
+        correlationId: correlationId || uuidv4(),
+      },
+    });
+  }
+}
