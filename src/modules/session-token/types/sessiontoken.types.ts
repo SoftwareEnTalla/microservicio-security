@@ -39,6 +39,8 @@ export class SessionTokenResponse<T extends SessionToken> extends GQResponseBase
   @ApiProperty({ type: SessionToken,nullable:false,description:"Datos de respuesta de SessionToken" })
   @Field(() => SessionToken, { description: "Instancia de SessionToken", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de sessiontokens" })
