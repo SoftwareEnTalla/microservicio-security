@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { SystemAdminPolicyQueryService } from "../services/systemadminpolicyquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { SystemAdminPolicyResponse, SystemAdminPolicysResponse } from "../types/systemadminpolicy.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { SystemAdminPolicy } from "../entities/system-admin-policy.entity";
+import { SystemAdminPolicyAuthGuard } from "../guards/systemadminpolicyauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { SystemAdminPolicyDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("SystemAdminPolicy Query")
+@UseGuards(SystemAdminPolicyAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("systemadminpolicys/query")
 export class SystemAdminPolicyQueryController {
   #logger = new Logger(SystemAdminPolicyQueryController.name);
