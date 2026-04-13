@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { SecurityMasterDataQueryService } from "../services/securitymasterdataquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { SecurityMasterDataResponse, SecurityMasterDatasResponse } from "../types/securitymasterdata.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { SecurityMasterData } from "../entities/security-master-data.entity";
+import { SecurityMasterDataAuthGuard } from "../guards/securitymasterdataauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { SecurityMasterDataDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("SecurityMasterData Query")
+@UseGuards(SecurityMasterDataAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("securitymasterdatas/query")
 export class SecurityMasterDataQueryController {
   #logger = new Logger(SecurityMasterDataQueryController.name);
