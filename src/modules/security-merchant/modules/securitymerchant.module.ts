@@ -34,6 +34,7 @@ import { SecurityMerchantCommandController } from "../controllers/securitymercha
 import { SecurityMerchantQueryController } from "../controllers/securitymerchantquery.controller";
 import { SecurityMerchantCommandService } from "../services/securitymerchantcommand.service";
 import { SecurityMerchantQueryService } from "../services/securitymerchantquery.service";
+
 import { SecurityMerchantCommandRepository } from "../repositories/securitymerchantcommand.repository";
 import { SecurityMerchantQueryRepository } from "../repositories/securitymerchantquery.repository";
 import { SecurityMerchantRepository } from "../repositories/securitymerchant.repository";
@@ -75,6 +76,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMerchantQueryService,
     SecurityMerchantCommandService,
+  
     //Repositories
     SecurityMerchantCommandRepository,
     SecurityMerchantQueryRepository,
@@ -115,6 +117,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMerchantQueryService,
     SecurityMerchantCommandService,
+  
     //Repositories
     SecurityMerchantCommandRepository,
     SecurityMerchantQueryRepository,
