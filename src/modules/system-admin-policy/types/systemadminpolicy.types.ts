@@ -39,6 +39,8 @@ export class SystemAdminPolicyResponse<T extends SystemAdminPolicy> extends GQRe
   @ApiProperty({ type: SystemAdminPolicy,nullable:false,description:"Datos de respuesta de SystemAdminPolicy" })
   @Field(() => SystemAdminPolicy, { description: "Instancia de SystemAdminPolicy", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de systemadminpolicys" })
