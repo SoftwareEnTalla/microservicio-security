@@ -39,6 +39,8 @@ export class AuthenticationResponse<T extends Authentication> extends GQResponse
   @ApiProperty({ type: Authentication,nullable:false,description:"Datos de respuesta de Authentication" })
   @Field(() => Authentication, { description: "Instancia de Authentication", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de authentications" })
