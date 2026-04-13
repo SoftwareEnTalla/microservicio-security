@@ -54,6 +54,9 @@ import { AuthenticationQueryService } from "./modules/authentication/services/au
 import { IdentityFederationModule } from "./modules/identity-federation/modules/identityfederation.module";
 import { IdentityFederationCommandService } from "./modules/identity-federation/services/identityfederationcommand.service";
 import { IdentityFederationQueryService } from "./modules/identity-federation/services/identityfederationquery.service";
+import { LoginModule } from "./modules/login/modules/login.module";
+import { LoginCommandService } from "./modules/login/services/logincommand.service";
+import { LoginQueryService } from "./modules/login/services/loginquery.service";
 import { MfaTotpModule } from "./modules/mfa-totp/modules/mfatotp.module";
 import { MfaTotpCommandService } from "./modules/mfa-totp/services/mfatotpcommand.service";
 import { MfaTotpQueryService } from "./modules/mfa-totp/services/mfatotpquery.service";
@@ -84,8 +87,6 @@ import { UserProfileQueryService } from "./modules/user-profile/services/userpro
 import { UserModule } from "./modules/user/modules/user.module";
 import { UserCommandService } from "./modules/user/services/usercommand.service";
 import { UserQueryService } from "./modules/user/services/userquery.service";
-import { LoginModule } from "./modules/login/modules/login.module";
-import { LoginService } from "./modules/login/services/login.service";
 
 /*
 //TODO unused for while dependencies
@@ -151,6 +152,7 @@ import LoggerService, { logger } from "@core/logs/logger";
     SecurityModule,
         AuthenticationModule,
     IdentityFederationModule,
+    LoginModule,
     MfaTotpModule,
     RbacAclModule,
     SalesManagerModule,
@@ -161,7 +163,6 @@ import LoggerService, { logger } from "@core/logs/logger";
     SystemAdminPolicyModule,
     UserProfileModule,
     UserModule,    
-    LoginModule,
     /**
      * Módulo Logger de la aplicación
      */
@@ -251,6 +252,8 @@ export class SecurityAppModule implements OnModuleInit {
       AuthenticationQueryService,
       IdentityFederationCommandService,
       IdentityFederationQueryService,
+      LoginCommandService,
+      LoginQueryService,
       MfaTotpCommandService,
       MfaTotpQueryService,
       RbacAclCommandService,
@@ -270,8 +273,7 @@ export class SecurityAppModule implements OnModuleInit {
       UserProfileCommandService,
       UserProfileQueryService,
       UserCommandService,
-      UserQueryService,
-      LoginService,
+      UserQueryService,    
     ]);
     const loggerService = ServiceRegistry.getInstance().get(
       "LoggerService"

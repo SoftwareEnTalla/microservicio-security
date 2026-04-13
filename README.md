@@ -4,16 +4,6 @@
 
 **Author**: Ing. Persy Morell Guerra e Ing. Dailyn García Dominguez (SoftwarEnTalla CEO)
 
-## Novedades funcionales
-
-- módulo `login` para:
-	- autenticación con identificador + contraseña;
-	- inicio de sesión federado con proveedores externos configurados;
-	- refresh de sesión;
-	- logout.
-- registro desacoplado del resultado final del login en `authentication` mediante eventos internos y saga local.
-- emisión y rotación de continuidad de sesión apoyada en `session-token`.
-
 ## Microservice Structure
 
 ```plaintext
@@ -87,6 +77,30 @@
 | | |____shared
 | | | |____adapters
 | | | |____decorators
+| | | |____event-store
+| | | |____messaging
+| | |____types
+| |____login
+| | |____aggregates
+| | |____commands
+| | | |____handlers
+| | |____config
+| | |____controllers
+| | |____decorators
+| | |____dtos
+| | |____entities
+| | |____events
+| | |____graphql
+| | |____guards
+| | |____interceptors
+| | |____modules
+| | |____queries
+| | | |____handlers
+| | |____repositories
+| | |____sagas
+| | |____services
+| | |____shared
+| | | |____adapters
 | | | |____event-store
 | | | |____messaging
 | | |____types
