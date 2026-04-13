@@ -28,68 +28,27 @@
  *
  */
 
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { Login } from "../entities/login.entity";
-import { LoginRepository } from "../repositories/login.repository";
+import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
+import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto } from "../dtos/all-dto";
 
 @Injectable()
 export class LoginService {
-  constructor(private readonly repository: LoginRepository) {}
 
-  // Métodos delegados
-  async findAll(options?: any): Promise<Login[]> {
-    return this.repository.findAll(options);
+  async authenticateWithPassword(payload: LoginAuthenticateWithPasswordDto): Promise<LoginResponse<Login>> {
+    throw new BadRequestException('La acción Autenticar localmente con identificador y contraseña requiere implementación de negocio específica en el servicio Login.');
   }
 
-  async findById(id: string): Promise<Login | null> {
-    return this.repository.findById(id);
+  async startFederatedLogin(payload: LoginStartFederatedLoginDto): Promise<FederatedLoginStartResponse> {
+    throw new BadRequestException('La acción Iniciar autenticación con proveedor externo requiere implementación de negocio específica en el servicio Login.');
   }
 
-  async findByField(field: string, value: any, page: number, limit: number): Promise<Login[]> {
-    return this.repository.findByField(field, value, page, limit);
+  async refreshSession(payload: LoginRefreshSessionDto): Promise<LoginResponse<Login>> {
+    throw new BadRequestException('La acción Renovar una sesión vigente requiere implementación de negocio específica en el servicio Login.');
   }
 
-  async findWithPagination(options: any, page: number, limit: number): Promise<Login[]> {
-    return this.repository.findWithPagination(options, page, limit);
-  }
-
-  async count(): Promise<number> {
-    return this.repository.count();
-  }
-
-  async findAndCount(where?: Record<string, any>): Promise<[Login[], number]> {
-    return this.repository.findAndCount(where);
-  }
-
-  async findOne(where?: Record<string, any>): Promise<Login | null> {
-    return this.repository.findOne(where);
-  }
-
-  async findOneOrFail(where?: Record<string, any>): Promise<Login> {
-    return this.repository.findOneOrFail(where);
-  }
-
-  async create(entity: Login): Promise<Login> {
-    return this.repository.create(entity);
-  }
-
-  async bulkCreate(entities: Login[]): Promise<Login[]> {
-    return this.repository.bulkCreate(entities);
-  }
-
-  async update(id: string, partialEntity: Partial<Login>): Promise<Login | null> {
-    return this.repository.update(id, partialEntity);
-  }
-
-  async bulkUpdate(entities: Partial<Login>[]): Promise<Login[]> {
-    return this.repository.bulkUpdate(entities);
-  }
-
-  async delete(id: string): Promise<any> {
-    return this.repository.delete(id);
-  }
-
-  async bulkDelete(ids: string[]): Promise<any> {
-    return this.repository.bulkDelete(ids);
+  async logout(payload: LoginLogoutDto): Promise<LogoutResponse> {
+    throw new BadRequestException('La acción Cerrar sesión requiere implementación de negocio específica en el servicio Login.');
   }
 }

@@ -34,6 +34,7 @@ import { LoginCommandController } from "../controllers/logincommand.controller";
 import { LoginQueryController } from "../controllers/loginquery.controller";
 import { LoginCommandService } from "../services/logincommand.service";
 import { LoginQueryService } from "../services/loginquery.service";
+import { LoginService } from "../services/login.service";
 import { LoginCommandRepository } from "../repositories/logincommand.repository";
 import { LoginQueryRepository } from "../repositories/loginquery.repository";
 import { LoginRepository } from "../repositories/login.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     LoginQueryService,
     LoginCommandService,
+      LoginService,
     //Repositories
     LoginCommandRepository,
     LoginQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     LoginQueryService,
     LoginCommandService,
+      LoginService,
     //Repositories
     LoginCommandRepository,
     LoginQueryRepository,

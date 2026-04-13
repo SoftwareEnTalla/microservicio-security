@@ -29,314 +29,123 @@
  */
 
 
-import {
-  Controller,
-  Post,
-  Body,
-  Put,
-  Param,
-  Delete,
-  NotFoundException,
-  Get,
-  Query,
-} from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from "@nestjs/swagger";
-import { LoginCommandService } from "../services/logincommand.service";
-
-import { DeleteResult } from "typeorm";
-import { Logger } from "@nestjs/common";
-import { Helper } from "src/common/helpers/helpers";
+import { Controller, Body, Logger, Post, Get, Put, Patch, Delete } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
+import { LoginService } from "../services/login.service";
 import { Login } from "../entities/login.entity";
-import { LoginResponse, LoginsResponse } from "../types/login.types";
-import { CreateLoginDto, UpdateLoginDto } from "../dtos/all-dto"; 
-
-//Loggers
-import { LoggerClient } from "src/common/logger/logger.client";
+import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
+import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto } from "../dtos/all-dto";
+import { Helper } from "src/common/helpers/helpers";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
+import { LoggerClient } from "src/common/logger/logger.client";
 import { logger } from '@core/logs/logger';
-
-import { BadRequestException } from "@nestjs/common";
-
-import { CommandBus } from "@nestjs/cqrs";
-//import { LoginCreatedEvent } from "../events/logincreated.event";
-import { EventStoreService } from "../shared/event-store/event-store.service";
-import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
-
 @ApiTags("Login Command")
 @Controller("logins/command")
 export class LoginCommandController {
-
   #logger = new Logger(LoginCommandController.name);
-
-  //Constructor del controlador: LoginCommandController
-  constructor(
-  private readonly service: LoginCommandService,
-  private readonly commandBus: CommandBus,
-  private readonly eventStore: EventStoreService,
-  private readonly eventPublisher: KafkaEventPublisher
-  ) {
-    //Coloca aquí la lógica que consideres necesaria para inicializar el controlador
-  }
-
-  @ApiOperation({ summary: "Create a new login" })
-  @ApiBody({ type: CreateLoginDto })
-  @ApiResponse({ status: 201, type: LoginResponse<Login> })
+  constructor(private readonly service: LoginService) {}
+  @ApiOperation({ summary: "Autenticar localmente con identificador y contraseña" })
+  @ApiBody({ type: LoginAuthenticateWithPasswordDto })
+  @ApiResponse({ status: 200, type: LoginResponse<Login> })
   @Post()
   @LogExecutionTime({
     layer: "controller",
     callback: async (logData, client) => {
-      // Puedes usar el cliente proporcionado o ignorarlo y usar otro
-      try{
-        logger.info('Información del cliente y datos a enviar:',[logData,client]);
+      try {
+        logger.info('Información del cliente y datos a enviar:', [logData, client]);
         return await client.send(logData);
-      }
-      catch(error){
+      } catch (error) {
         logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
         logger.info('ERROR-LOG: ', error);
         throw error;
       }
     },
-    client: LoggerClient.getInstance()
-      .registerClient(LoginCommandController.name)
-      .get(LoginCommandController.name),
+    client: LoggerClient.getInstance().registerClient(LoginCommandController.name).get(LoginCommandController.name),
   })
-  async create(
-    @Body() createLoginDtoInput: CreateLoginDto
-  ): Promise<LoginResponse<Login>> {
+  async authenticateWithPassword(@Body() payload: LoginAuthenticateWithPasswordDto): Promise<LoginResponse<Login>> {
     try {
-      logger.info("Receiving in controller:", createLoginDtoInput);
-      const entity = await this.service.create(createLoginDtoInput);
-      logger.info("Entity created on controller:", entity);
-      if (!entity) {
-        throw new NotFoundException("Response login entity not found.");
-      } else if (!entity.data) {
-        throw new NotFoundException("Login entity not found on response.");
-      } else if (!entity.data.id) {
-        throw new NotFoundException("Id login is null on order instance.");
-      }     
-
-      return entity;
+      return await this.service.authenticateWithPassword(payload);
     } catch (error) {
-      logger.info("Error creating entity on controller:", error);
       logger.error(error);
       return Helper.throwCachedError(error);
     }
   }
-
-  
-  
-  @ApiOperation({ summary: "Create multiple logins" })
-  @ApiBody({ type: [CreateLoginDto] })
-  @ApiResponse({ status: 201, type: LoginsResponse<Login> })
-  @Post("bulk")
+  @ApiOperation({ summary: "Iniciar autenticación con proveedor externo" })
+  @ApiBody({ type: LoginStartFederatedLoginDto })
+  @ApiResponse({ status: 200, type: FederatedLoginStartResponse })
+  @Post("federated/start")
   @LogExecutionTime({
     layer: "controller",
     callback: async (logData, client) => {
-      // Puedes usar el cliente proporcionado o ignorarlo y usar otro
-      try{
-        logger.info('Información del cliente y datos a enviar:',[logData,client]);
+      try {
+        logger.info('Información del cliente y datos a enviar:', [logData, client]);
         return await client.send(logData);
-      }
-      catch(error){
+      } catch (error) {
         logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
         logger.info('ERROR-LOG: ', error);
         throw error;
       }
     },
-    client: LoggerClient.getInstance()
-      .registerClient(LoginCommandController.name)
-      .get(LoginCommandController.name),
+    client: LoggerClient.getInstance().registerClient(LoginCommandController.name).get(LoginCommandController.name),
   })
-  async bulkCreate(
-    @Body() createLoginDtosInput: CreateLoginDto[]
-  ): Promise<LoginsResponse<Login>> {
+  async startFederatedLogin(@Body() payload: LoginStartFederatedLoginDto): Promise<FederatedLoginStartResponse> {
     try {
-      const entities = await this.service.bulkCreate(createLoginDtosInput);
-
-      if (!entities) {
-        throw new NotFoundException("Login entities not found.");
-      }
-
-      return entities;
+      return await this.service.startFederatedLogin(payload);
     } catch (error) {
       logger.error(error);
       return Helper.throwCachedError(error);
     }
   }
-
-  
-  
-  @ApiOperation({ summary: "Update an login" })
-  @ApiParam({
-    name: "id",
-    description: "Identificador desde la url del endpoint",
-  }) // ✅ Documentamos el ID de la URL
-  @ApiBody({
-    type: UpdateLoginDto,
-    description: "El Payload debe incluir el mismo ID de la URL",
-  })
+  @ApiOperation({ summary: "Renovar una sesión vigente" })
+  @ApiBody({ type: LoginRefreshSessionDto })
   @ApiResponse({ status: 200, type: LoginResponse<Login> })
-  @ApiResponse({
-    status: 400,
-    description:
-      "EL ID en la URL no coincide con la instancia Login a actualizar.",
-  }) // ✅ Nuevo status para el error de validación
-  @Put(":id")
+  @Post("refresh")
   @LogExecutionTime({
     layer: "controller",
     callback: async (logData, client) => {
-      // Puedes usar el cliente proporcionado o ignorarlo y usar otro
-      try{
-        logger.info('Información del cliente y datos a enviar:',[logData,client]);
+      try {
+        logger.info('Información del cliente y datos a enviar:', [logData, client]);
         return await client.send(logData);
-      }
-      catch(error){
+      } catch (error) {
         logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
         logger.info('ERROR-LOG: ', error);
         throw error;
       }
     },
-    client: LoggerClient.getInstance()
-      .registerClient(LoginCommandController.name)
-      .get(LoginCommandController.name),
+    client: LoggerClient.getInstance().registerClient(LoginCommandController.name).get(LoginCommandController.name),
   })
-  async update(
-    @Param("id") id: string,
-    @Body() body: any
-  ): Promise<LoginResponse<Login>> {
+  async refreshSession(@Body() payload: LoginRefreshSessionDto): Promise<LoginResponse<Login>> {
     try {
-      // Permitir body plano o anidado en 'data'
-      const partialEntity = body?.data ? body.data : body;
-      // ✅ Validación de coincidencia de IDs
-      if (id !== partialEntity.id) {
-        throw new BadRequestException(
-          "El ID en la URL no coincide con el ID en la instancia de Login a actualizar."
-        );
-      }
-      const entity = await this.service.update(id, partialEntity);
-
-      if (!entity) {
-        throw new NotFoundException("Instancia de Login no encontrada.");
-      }
-
-      return entity;
+      return await this.service.refreshSession(payload);
     } catch (error) {
       logger.error(error);
       return Helper.throwCachedError(error);
     }
   }
-
-  
-  
-  @ApiOperation({ summary: "Update multiple logins" })
-  @ApiBody({ type: [UpdateLoginDto] })
-  @ApiResponse({ status: 200, type: LoginsResponse<Login> })
-  @Put("bulk")
+  @ApiOperation({ summary: "Cerrar sesión" })
+  @ApiBody({ type: LoginLogoutDto })
+  @ApiResponse({ status: 200, type: LogoutResponse })
+  @Post("logout")
   @LogExecutionTime({
     layer: "controller",
     callback: async (logData, client) => {
-      // Puedes usar el cliente proporcionado o ignorarlo y usar otro
-      try{
-        logger.info('Información del cliente y datos a enviar:',[logData,client]);
+      try {
+        logger.info('Información del cliente y datos a enviar:', [logData, client]);
         return await client.send(logData);
-      }
-      catch(error){
+      } catch (error) {
         logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
         logger.info('ERROR-LOG: ', error);
         throw error;
       }
     },
-    client: LoggerClient.getInstance()
-      .registerClient(LoginCommandController.name)
-      .get(LoginCommandController.name),
+    client: LoggerClient.getInstance().registerClient(LoginCommandController.name).get(LoginCommandController.name),
   })
-  async bulkUpdate(
-    @Body() partialEntities: UpdateLoginDto[]
-  ): Promise<LoginsResponse<Login>> {
+  async logout(@Body() payload: LoginLogoutDto): Promise<LogoutResponse> {
     try {
-      const entities = await this.service.bulkUpdate(partialEntities);
-
-      if (!entities) {
-        throw new NotFoundException("Login entities not found.");
-      }
-
-      return entities;
+      return await this.service.logout(payload);
     } catch (error) {
       logger.error(error);
       return Helper.throwCachedError(error);
     }
-  }
-
-  
-  
-  @ApiOperation({ summary: "Delete an login" })   
-  @ApiResponse({ status: 200, type: LoginResponse<Login>,description:
-    "Instancia de Login eliminada satisfactoriamente.", })
-  @ApiResponse({
-    status: 400,
-    description:
-      "EL ID en la URL no coincide con la instancia Login a eliminar.",
-  }) // ✅ Nuevo status para el error de validación
-  @Delete(":id")
-  @LogExecutionTime({
-    layer: "controller",
-    callback: async (logData, client) => {
-      // Puedes usar el cliente proporcionado o ignorarlo y usar otro
-      try{
-        logger.info('Información del cliente y datos a enviar:',[logData,client]);
-        return await client.send(logData);
-      }
-      catch(error){
-        logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
-        logger.info('ERROR-LOG: ', error);
-        throw error;
-      }
-    },
-    client: LoggerClient.getInstance()
-      .registerClient(LoginCommandController.name)
-      .get(LoginCommandController.name),
-  })
-  async delete(@Param("id") id: string): Promise<LoginResponse<Login>> {
-    try {
-       
-      const result = await this.service.delete(id);
-
-      if (!result) {
-        throw new NotFoundException("Login entity not found.");
-      }
-
-      return result;
-    } catch (error) {
-      logger.error(error);
-      return Helper.throwCachedError(error);
-    }
-  }
-
-  
-  
-  @ApiOperation({ summary: "Delete multiple logins" })
-  @ApiResponse({ status: 200, type: DeleteResult })
-  @Delete("bulk")
-  @LogExecutionTime({
-    layer: "controller",
-    callback: async (logData, client) => {
-      // Puedes usar el cliente proporcionado o ignorarlo y usar otro
-      try{
-        logger.info('Información del cliente y datos a enviar:',[logData,client]);
-        return await client.send(logData);
-      }
-      catch(error){
-        logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
-        logger.info('ERROR-LOG: ', error);
-        throw error;
-      }
-    },
-    client: LoggerClient.getInstance()
-      .registerClient(LoginCommandController.name)
-      .get(LoginCommandController.name),
-  })
-  async bulkDelete(@Query("ids") ids: string[]): Promise<DeleteResult> {
-    return await this.service.bulkDelete(ids);
   }
 }
-

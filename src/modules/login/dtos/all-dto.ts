@@ -519,3 +519,115 @@ export class UpdateLoginDto extends BaseLoginDto {
   }
 } 
 
+
+@InputType()
+export class LoginAuthenticateWithPasswordDto {
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Nombre de usuario, correo o teléfono usado para entrar',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Nombre de usuario, correo o teléfono usado para entrar', nullable: false })
+  identifier!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Contraseña asociada a la cuenta',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Contraseña asociada a la cuenta', nullable: false })
+  password!: string;
+
+  constructor(partial: Partial<LoginAuthenticateWithPasswordDto> = {}) {
+    Object.assign(this, partial);
+  }
+}
+
+
+@InputType()
+export class LoginStartFederatedLoginDto {
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Código del proveedor de identidad externo habilitado',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Código del proveedor de identidad externo habilitado', nullable: false })
+  providerCode!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'URL de retorno de la aplicación consumidora',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'URL de retorno de la aplicación consumidora', nullable: false })
+  redirectUri!: string;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Identificador sugerido para el proveedor externo',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Identificador sugerido para el proveedor externo', nullable: true })
+  loginHint?: string = '';
+
+  constructor(partial: Partial<LoginStartFederatedLoginDto> = {}) {
+    Object.assign(this, partial);
+  }
+}
+
+
+@InputType()
+export class LoginRefreshSessionDto {
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Refresh token vigente emitido por security',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Refresh token vigente emitido por security', nullable: false })
+  refreshToken!: string;
+
+  constructor(partial: Partial<LoginRefreshSessionDto> = {}) {
+    Object.assign(this, partial);
+  }
+}
+
+
+@InputType()
+export class LoginLogoutDto {
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Código de sesión emitido por security',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Código de sesión emitido por security', nullable: true })
+  sessionCode?: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Refresh token de la sesión a invalidar',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Refresh token de la sesión a invalidar', nullable: true })
+  refreshToken?: string = '';
+
+  constructor(partial: Partial<LoginLogoutDto> = {}) {
+    Object.assign(this, partial);
+  }
+}
+
