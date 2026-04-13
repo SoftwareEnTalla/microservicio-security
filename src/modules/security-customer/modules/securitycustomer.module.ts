@@ -34,6 +34,7 @@ import { SecurityCustomerCommandController } from "../controllers/securitycustom
 import { SecurityCustomerQueryController } from "../controllers/securitycustomerquery.controller";
 import { SecurityCustomerCommandService } from "../services/securitycustomercommand.service";
 import { SecurityCustomerQueryService } from "../services/securitycustomerquery.service";
+
 import { SecurityCustomerCommandRepository } from "../repositories/securitycustomercommand.repository";
 import { SecurityCustomerQueryRepository } from "../repositories/securitycustomerquery.repository";
 import { SecurityCustomerRepository } from "../repositories/securitycustomer.repository";
@@ -75,6 +76,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityCustomerQueryService,
     SecurityCustomerCommandService,
+  
     //Repositories
     SecurityCustomerCommandRepository,
     SecurityCustomerQueryRepository,
@@ -115,6 +117,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityCustomerQueryService,
     SecurityCustomerCommandService,
+  
     //Repositories
     SecurityCustomerCommandRepository,
     SecurityCustomerQueryRepository,
