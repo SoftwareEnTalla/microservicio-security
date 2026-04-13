@@ -39,6 +39,8 @@ export class SalesManagerResponse<T extends SalesManager> extends GQResponseBase
   @ApiProperty({ type: SalesManager,nullable:false,description:"Datos de respuesta de SalesManager" })
   @Field(() => SalesManager, { description: "Instancia de SalesManager", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de salesmanagers" })
