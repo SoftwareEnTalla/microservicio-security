@@ -39,6 +39,8 @@ export class SecurityMerchantResponse<T extends SecurityMerchant> extends GQResp
   @ApiProperty({ type: SecurityMerchant,nullable:false,description:"Datos de respuesta de SecurityMerchant" })
   @Field(() => SecurityMerchant, { description: "Instancia de SecurityMerchant", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de securitymerchants" })
