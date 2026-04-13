@@ -39,6 +39,8 @@ export class SecurityMasterDataResponse<T extends SecurityMasterData> extends GQ
   @ApiProperty({ type: SecurityMasterData,nullable:false,description:"Datos de respuesta de SecurityMasterData" })
   @Field(() => SecurityMasterData, { description: "Instancia de SecurityMasterData", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de securitymasterdatas" })
