@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { SalesManagerQueryService } from "../services/salesmanagerquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { SalesManagerResponse, SalesManagersResponse } from "../types/salesmanager.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { SalesManager } from "../entities/sales-manager.entity";
+import { SalesManagerAuthGuard } from "../guards/salesmanagerauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { SalesManagerDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("SalesManager Query")
+@UseGuards(SalesManagerAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("salesmanagers/query")
 export class SalesManagerQueryController {
   #logger = new Logger(SalesManagerQueryController.name);
