@@ -34,6 +34,7 @@ import { SecurityMasterDataCommandController } from "../controllers/securitymast
 import { SecurityMasterDataQueryController } from "../controllers/securitymasterdataquery.controller";
 import { SecurityMasterDataCommandService } from "../services/securitymasterdatacommand.service";
 import { SecurityMasterDataQueryService } from "../services/securitymasterdataquery.service";
+
 import { SecurityMasterDataCommandRepository } from "../repositories/securitymasterdatacommand.repository";
 import { SecurityMasterDataQueryRepository } from "../repositories/securitymasterdataquery.repository";
 import { SecurityMasterDataRepository } from "../repositories/securitymasterdata.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMasterDataQueryService,
     SecurityMasterDataCommandService,
+  
     //Repositories
     SecurityMasterDataCommandRepository,
     SecurityMasterDataQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMasterDataQueryService,
     SecurityMasterDataCommandService,
+  
     //Repositories
     SecurityMasterDataCommandRepository,
     SecurityMasterDataQueryRepository,
