@@ -84,6 +84,10 @@ export class AuthenticationRecordLoginRefreshedSaga {
   private async executeDispatch1(event: any, correlationId: string): Promise<void> {
     const metadata = this.buildCommandMetadata(event, correlationId);
     const payload = {
+      name: this.resolveValue(event, 'payload.instance.name'),
+      description: this.resolveValue(event, 'payload.instance.description'),
+      createdBy: this.resolveValue(event, 'payload.instance.createdBy'),
+      isActive: this.resolveValue(event, 'payload.instance.isActive'),
       userId: this.resolveValue(event, 'payload.instance.userId'),
       loginIdentifier: this.resolveValue(event, 'payload.instance.loginIdentifier'),
       authMethod: this.resolveValue(event, 'payload.instance.authMethod'),

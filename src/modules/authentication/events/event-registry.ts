@@ -33,9 +33,9 @@ import { BaseEvent } from './base.event';
 import { AuthenticationCreatedEvent } from './authenticationcreated.event';
 import { AuthenticationUpdatedEvent } from './authenticationupdated.event';
 import { AuthenticationDeletedEvent } from './authenticationdeleted.event';
-import { LoginSucceededEvent } from '../../login/events/loginsucceeded.event';
-import { LoginFailedEvent } from '../../login/events/loginfailed.event';
-import { LoginRefreshedEvent } from '../../login/events/loginrefreshed.event';
+import { LoginSucceededEvent } from './loginsucceeded.event';
+import { LoginFailedEvent } from './loginfailed.event';
+import { LoginRefreshedEvent } from './loginrefreshed.event';
 
 export type RegisteredEventClass<T extends BaseEvent = BaseEvent> = new (
   aggregateId: string,
