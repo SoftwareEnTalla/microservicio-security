@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { SessionTokenQueryService } from "../services/sessiontokenquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { SessionTokenResponse, SessionTokensResponse } from "../types/sessiontoken.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { SessionToken } from "../entities/session-token.entity";
+import { SessionTokenAuthGuard } from "../guards/sessiontokenauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { SessionTokenDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("SessionToken Query")
+@UseGuards(SessionTokenAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("sessiontokens/query")
 export class SessionTokenQueryController {
   #logger = new Logger(SessionTokenQueryController.name);
