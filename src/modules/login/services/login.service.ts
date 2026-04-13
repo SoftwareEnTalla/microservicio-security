@@ -30,6 +30,7 @@
 
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { EventBus } from "@nestjs/cqrs";
 import { createHash, randomUUID } from "crypto";
 import { Repository } from "typeorm";
 import { Login } from "../entities/login.entity";
@@ -51,6 +52,7 @@ export class LoginService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(SessionToken)
     private readonly sessionTokenRepository: Repository<SessionToken>,
+    private readonly eventBus: EventBus,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
   ) {}
@@ -529,6 +531,7 @@ export class LoginService {
 
   private async publishDomainEvents(events: BaseEvent[]): Promise<void> {
     for (const event of events) {
+      this.eventBus.publish(event as any);
       await this.eventPublisher.publish(event as any);
       if (process.env.EVENT_STORE_ENABLED === "true") {
         await this.eventStore.appendEvent(`login-${event.aggregateId}`, event);

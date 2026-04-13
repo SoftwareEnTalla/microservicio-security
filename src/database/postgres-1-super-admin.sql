@@ -31,7 +31,7 @@ BEGIN
       "mfaEnabled" = false,
       "totpEnabled" = false,
       "federatedOnly" = false,
-      metadata = '{}'::json
+      metadata = '{"acls":{"role":"SUPER_ADMIN","permissions":["*"]}}'::json
     WHERE email = '${SQL:SA_EMAIL}'
        OR "identifierValue" = '${SQL:SA_EMAIL}'
        OR username = '${SQL:SA_EMAIL}'
@@ -86,7 +86,7 @@ BEGIN
       false,
       false,
       false,
-      '{}'::json
+      '{"acls":{"role":"SUPER_ADMIN","permissions":["*"]}}'::json
     );
   END IF;
 END $$;

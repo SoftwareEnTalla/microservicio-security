@@ -30,9 +30,9 @@
 export * from "./authenticationdeleted.event"; 
 export * from "./authenticationcreated.event";
 export * from "./authenticationupdated.event";
-export * from "./loginsucceeded.event";
-export * from "./loginfailed.event";
-export * from "./loginrefreshed.event";
+export { LoginSucceededEvent } from "../../login/events/loginsucceeded.event";
+export { LoginFailedEvent } from "../../login/events/loginfailed.event";
+export { LoginRefreshedEvent } from "../../login/events/loginrefreshed.event";
 export * from "./event-registry";
 export * from "./base.event";
 export * from "./authentication-failed.event";
