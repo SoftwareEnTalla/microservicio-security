@@ -39,6 +39,8 @@ export class SecurityResponse<T extends Security> extends GQResponseBase {
   @ApiProperty({ type: Security,nullable:false,description:"Datos de respuesta de Security" })
   @Field(() => Security, { description: "Instancia de Security", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de securitys" })
