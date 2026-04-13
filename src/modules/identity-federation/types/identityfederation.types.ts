@@ -39,6 +39,8 @@ export class IdentityFederationResponse<T extends IdentityFederation> extends GQ
   @ApiProperty({ type: IdentityFederation,nullable:false,description:"Datos de respuesta de IdentityFederation" })
   @Field(() => IdentityFederation, { description: "Instancia de IdentityFederation", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de identityfederations" })
