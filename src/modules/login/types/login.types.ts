@@ -52,12 +52,13 @@ export class LoginsResponse<T extends Login> extends GQResponseBase {
   count: number = 0;
 }
 
+
+
 @ObjectType({ description: "Respuesta de iniciar autenticación con proveedor externo" })
-export class FederatedLoginStartResponse extends LoginResponse<Login> {}
+export class FederatedLoginStartResponse extends GQResponseBase {}
 
 @ObjectType({ description: "Respuesta de cerrar sesión" })
-export class LogoutResponse extends LoginResponse<Login> {}
-
+export class LogoutResponse extends GQResponseBase {}
 
 
 
