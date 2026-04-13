@@ -6,6 +6,7 @@ BEGIN
     WHERE email = '${SQL:SA_EMAIL}'
        OR "identifierValue" = '${SQL:SA_EMAIL}'
        OR username = '${SQL:SA_EMAIL}'
+      OR code = 'security-super-admin'
   ) THEN
     UPDATE user_base_entity
     SET
@@ -33,7 +34,8 @@ BEGIN
       metadata = '{}'::json
     WHERE email = '${SQL:SA_EMAIL}'
        OR "identifierValue" = '${SQL:SA_EMAIL}'
-       OR username = '${SQL:SA_EMAIL}';
+       OR username = '${SQL:SA_EMAIL}'
+       OR code = 'security-super-admin';
   ELSE
     INSERT INTO user_base_entity (
       id,

@@ -43,6 +43,8 @@ import { LoginAuthGuard } from "../guards/loginauthguard.guard";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Login } from "../entities/login.entity";
 import { BaseEntity } from "../entities/base.entity";
+import { User } from "../../user/entities/user.entity";
+import { SessionToken } from "../../session-token/entities/session-token.entity";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -66,7 +68,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, Login]), // Incluir BaseEntity para herencia
+    TypeOrmModule.forFeature([BaseEntity, Login, User, SessionToken]), // Incluir dependencias para login por acciones con persistencia directa
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [LoginCommandController, LoginQueryController],
