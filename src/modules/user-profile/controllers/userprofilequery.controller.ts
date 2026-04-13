@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { UserProfileQueryService } from "../services/userprofilequery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { UserProfileResponse, UserProfilesResponse } from "../types/userprofile.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { UserProfile } from "../entities/user-profile.entity";
+import { UserProfileAuthGuard } from "../guards/userprofileauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { UserProfileDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("UserProfile Query")
+@UseGuards(UserProfileAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("userprofiles/query")
 export class UserProfileQueryController {
   #logger = new Logger(UserProfileQueryController.name);
