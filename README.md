@@ -101,6 +101,7 @@
 | | |____services
 | | |____shared
 | | | |____adapters
+| | | |____decorators
 | | | |____event-store
 | | | |____messaging
 | | |____types
