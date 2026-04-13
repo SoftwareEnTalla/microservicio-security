@@ -74,14 +74,15 @@ export const Helper = {
     },
 
     throwCachedError(error: any) {
-        // HttpException
-        if (error.name === 'HttpException') {
-            throw new HttpException(error.message, error.status, error.options);
-        } else {
-            // Devolver error
-            throw new InternalServerErrorException(error);
-
+        if (error instanceof HttpException) {
+            throw error;
         }
+
+        if (error?.name === 'HttpException') {
+            throw new HttpException(error.message, error.status, error.options);
+        }
+
+        throw new InternalServerErrorException(error);
     },
 
     async waitObservableSubscription(

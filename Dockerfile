@@ -14,4 +14,4 @@ COPY . .
 RUN npm run build
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "node -e \"const ds=require('./dist/data-source.js'); ds.initializeDatabase().then(()=>process.exit(0)).catch((err)=>{console.error(err);process.exit(1);})\" && DATABASE_SKIP_INIT_SCRIPTS=true node dist/main.js"]

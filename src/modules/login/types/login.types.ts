@@ -39,6 +39,26 @@ export class LoginResponse<T extends Login> extends GQResponseBase {
   @ApiProperty({ type: Login,nullable:false,description:"Datos de respuesta de Login" })
   @Field(() => Login, { description: "Instancia de Login", nullable: true })
   data?: T;
+
+  @ApiProperty({ type: String, nullable: true, description: "Access token emitido para la sesión autenticada" })
+  @Field(() => String, { description: "Access token emitido para la sesión autenticada", nullable: true })
+  accessToken?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Refresh token emitido para renovar la sesión" })
+  @Field(() => String, { description: "Refresh token emitido para renovar la sesión", nullable: true })
+  refreshToken?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Código de sesión emitido" })
+  @Field(() => String, { description: "Código de sesión emitido", nullable: true })
+  sessionCode?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Identificador del usuario autenticado" })
+  @Field(() => String, { description: "Identificador del usuario autenticado", nullable: true })
+  userId?: string;
+
+  @ApiProperty({ type: Date, nullable: true, description: "Fecha de expiración del refresh token actual" })
+  @Field(() => Date, { description: "Fecha de expiración del refresh token actual", nullable: true })
+  expiresAt?: Date;
 }
 
 @ObjectType({ description: "Respuesta de logins" })
@@ -55,10 +75,34 @@ export class LoginsResponse<T extends Login> extends GQResponseBase {
 
 
 @ObjectType({ description: "Respuesta de iniciar autenticación con proveedor externo" })
-export class FederatedLoginStartResponse extends GQResponseBase {}
+export class FederatedLoginStartResponse extends GQResponseBase {
+  @ApiProperty({ type: String, nullable: true, description: "Proveedor externo seleccionado" })
+  @Field(() => String, { description: "Proveedor externo seleccionado", nullable: true })
+  providerCode?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "URL de autorización a la que debe redirigir el cliente" })
+  @Field(() => String, { description: "URL de autorización a la que debe redirigir el cliente", nullable: true })
+  authorizationUrl?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "URL de retorno solicitada por el cliente" })
+  @Field(() => String, { description: "URL de retorno solicitada por el cliente", nullable: true })
+  redirectUri?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Estado de correlación del flujo federado" })
+  @Field(() => String, { description: "Estado de correlación del flujo federado", nullable: true })
+  state?: string;
+}
 
 @ObjectType({ description: "Respuesta de cerrar sesión" })
-export class LogoutResponse extends GQResponseBase {}
+export class LogoutResponse extends GQResponseBase {
+  @ApiProperty({ type: String, nullable: true, description: "Código de sesión invalidado" })
+  @Field(() => String, { description: "Código de sesión invalidado", nullable: true })
+  sessionCode?: string;
+
+  @ApiProperty({ type: Date, nullable: true, description: "Fecha efectiva del cierre de sesión" })
+  @Field(() => Date, { description: "Fecha efectiva del cierre de sesión", nullable: true })
+  logoutAt?: Date;
+}
 
 
 

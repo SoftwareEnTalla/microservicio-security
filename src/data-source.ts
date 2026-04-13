@@ -32,6 +32,8 @@
 import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
 import { Pool, PoolConfig } from "pg";
+import { promises as fs } from "fs";
+import { createHash } from "crypto";
 import path from "path";
 import "reflect-metadata";
 import { CustomPostgresOptions } from "./interfaces/typeorm.interface";
@@ -181,14 +183,128 @@ async function checkPostgreSQLExtensions() {
         [ext]
       );
       if (res.rows.length === 0) {
-        logger.warn(`⚠️ Extensión '' no disponible`);
+        logger.warn("⚠️ Extensión '" + ext + "' no disponible");
       } else {
-        logger.log(`✅ Extensión '' instalada`);
-        await security.query(`CREATE EXTENSION IF NOT EXISTS ""`);
+        logger.log("✅ Extensión '" + ext + "' instalada");
+        await security.query('CREATE EXTENSION IF NOT EXISTS "' + ext + '"');
       }
     }
   } finally {
     await security.release();
+    await pool.end();
+  }
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function escapeSqlLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+function interpolateSqlTemplate(sql: string): string {
+  return sql
+    .replace(/\$\{SQL_SHA256:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(sha256(process.env[name] || "")))
+    .replace(/\$\{SHA256:([A-Z0-9_]+)\}/g, (_match, name) => sha256(process.env[name] || ""))
+    .replace(/\$\{SQL:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(process.env[name] || ""))
+    .replace(/\$\{([A-Z0-9_]+)\}/g, (_match, name) => process.env[name] || "");
+}
+
+async function resolveDatabaseScriptDirectory(): Promise<string | null> {
+  const candidates = [
+    path.join(process.cwd(), "src", "database"),
+    path.join(process.cwd(), "database"),
+    path.join(__dirname, "database"),
+    path.join(__dirname, "..", "src", "database"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const stats = await fs.stat(candidate);
+      if (stats.isDirectory()) {
+        return candidate;
+      }
+    } catch {
+      // continuar
+    }
+  }
+
+  return null;
+}
+
+async function resolveDatabaseScripts(scriptDirectory: string, dbType: string): Promise<string[]> {
+  const entries = await fs.readdir(scriptDirectory);
+  const prefix = `${dbType}-`;
+  const sqlFiles = entries
+    .filter((name) => name.toLowerCase().endsWith(".sql") && name.startsWith(prefix))
+    .sort((a, b) => a.localeCompare(b));
+
+  const initOrderPath = path.join(scriptDirectory, "init-order.txt");
+  try {
+    const initOrderContent = await fs.readFile(initOrderPath, "utf8");
+    const orderedNames = initOrderContent
+      .split(/[\n,\r]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (orderedNames.length > 0) {
+      return orderedNames.filter((name) => sqlFiles.includes(name));
+    }
+  } catch {
+    // si no existe init-order.txt se usa orden alfabético
+  }
+
+  return sqlFiles;
+}
+
+async function runDatabaseInitializationScripts() {
+  if ((process.env.DATABASE_SKIP_INIT_SCRIPTS || "false").toLowerCase() === "true") {
+    logger.info("ℹ️ Se omitieron los scripts de src/database por DATABASE_SKIP_INIT_SCRIPTS=true.");
+    return;
+  }
+
+  const dbType = (process.env.DB_TYPE || "postgres").trim().toLowerCase();
+  if (dbType !== "postgres") {
+    logger.warn(`⚠️ DB_TYPE='${dbType}' no tiene ejecutor SQL implementado actualmente. Se omiten scripts de src/database.`);
+    return;
+  }
+
+  const scriptDirectory = await resolveDatabaseScriptDirectory();
+  if (!scriptDirectory) {
+    logger.info("ℹ️ No existe carpeta src/database para inicialización adicional.");
+    return;
+  }
+
+  const orderedScripts = await resolveDatabaseScripts(scriptDirectory, dbType);
+  if (orderedScripts.length === 0) {
+    logger.info(`ℹ️ No hay scripts '${dbType}-*.sql' para ejecutar en ${scriptDirectory}.`);
+    return;
+  }
+
+  const pool = new Pool({
+    user: process.env.DB_USERNAME || "postgres",
+    host: process.env.DB_HOST || "localhost",
+    database: process.env.DB_NAME || "security-service",
+    password: process.env.DB_PASSWORD || "postgres",
+    port: Number(process.env.DB_PORT) || 5432,
+  });
+
+  const client = await pool.connect();
+  try {
+    for (const scriptName of orderedScripts) {
+      const scriptPath = path.join(scriptDirectory, scriptName);
+      const sql = interpolateSqlTemplate(await fs.readFile(scriptPath, "utf8")).trim();
+      if (!sql) {
+        logger.info(`ℹ️ Script vacío omitido: ${scriptName}`);
+        continue;
+      }
+      logger.info(`▶ Ejecutando script de inicialización: ${scriptName}`);
+      await client.query(sql);
+      logger.info(`✅ Script ejecutado correctamente: ${scriptName}`);
+    }
+  } finally {
+    client.release();
     await pool.end();
   }
 }
@@ -210,6 +326,7 @@ export async function initializeDatabase() {
       // Luego el resto de la inicialización
       await checkPostgreSQLExtensions();
       await AppDataSource.initialize();
+      await runDatabaseInitializationScripts();
       logger.log("📦 DataSource inicializado correctamente");
     }
     return AppDataSource;
