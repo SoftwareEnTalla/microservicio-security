@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { SecurityCustomerQueryService } from "../services/securitycustomerquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { SecurityCustomerResponse, SecurityCustomersResponse } from "../types/securitycustomer.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { SecurityCustomer } from "../entities/security-customer.entity";
+import { SecurityCustomerAuthGuard } from "../guards/securitycustomerauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { SecurityCustomerDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("SecurityCustomer Query")
+@UseGuards(SecurityCustomerAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("securitycustomers/query")
 export class SecurityCustomerQueryController {
   #logger = new Logger(SecurityCustomerQueryController.name);
