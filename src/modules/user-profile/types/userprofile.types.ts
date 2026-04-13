@@ -39,6 +39,8 @@ export class UserProfileResponse<T extends UserProfile> extends GQResponseBase {
   @ApiProperty({ type: UserProfile,nullable:false,description:"Datos de respuesta de UserProfile" })
   @Field(() => UserProfile, { description: "Instancia de UserProfile", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de userprofiles" })
