@@ -67,8 +67,8 @@ export class KafkaService implements OnModuleDestroy {
       .filter(Boolean);
     const baseClientId = (process.env.KAFKA_CLIENT_ID || 'nestjs-client').trim();
     const baseGroupId = (process.env.KAFKA_GROUP_ID || 'nestjs-group').trim();
-    this.kafkaClientId = ;
-    this.kafkaGroupId = ;
+    this.kafkaClientId = baseClientId + '-' + this.moduleMessagingKey;
+    this.kafkaGroupId = baseGroupId + '-' + this.moduleMessagingKey;
     this.kafka = new Kafka({
       clientId: this.kafkaClientId,
       brokers,
@@ -198,7 +198,7 @@ export class KafkaService implements OnModuleDestroy {
   ): Promise<void> {
     const topics = Array.isArray(topic) ? topic : [topic];
     const replayConsumer = this.kafka.consumer({
-      groupId: ,
+      groupId: this.kafkaGroupId + '-replay-' + Date.now(),
     });
 
     await replayConsumer.connect();
