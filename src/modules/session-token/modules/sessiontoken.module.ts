@@ -34,6 +34,7 @@ import { SessionTokenCommandController } from "../controllers/sessiontokencomman
 import { SessionTokenQueryController } from "../controllers/sessiontokenquery.controller";
 import { SessionTokenCommandService } from "../services/sessiontokencommand.service";
 import { SessionTokenQueryService } from "../services/sessiontokenquery.service";
+
 import { SessionTokenCommandRepository } from "../repositories/sessiontokencommand.repository";
 import { SessionTokenQueryRepository } from "../repositories/sessiontokenquery.repository";
 import { SessionTokenRepository } from "../repositories/sessiontoken.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SessionTokenQueryService,
     SessionTokenCommandService,
+  
     //Repositories
     SessionTokenCommandRepository,
     SessionTokenQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SessionTokenQueryService,
     SessionTokenCommandService,
+  
     //Repositories
     SessionTokenCommandRepository,
     SessionTokenQueryRepository,
