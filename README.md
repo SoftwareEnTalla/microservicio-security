@@ -1,6 +1,6 @@
 # SECURITY Microservice
 
-**Creation Date**: 2026-04-12
+**Creation Date**: 2026-04-13
 
 **Author**: Ing. Persy Morell Guerra e Ing. Dailyn García Dominguez (SoftwarEnTalla CEO)
 
@@ -24,6 +24,7 @@
 | |____logs
 | |____services
 | |____tda
+|____database
 |____errors
 |____filters
 |____i18n

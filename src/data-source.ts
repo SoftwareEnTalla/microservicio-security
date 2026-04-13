@@ -205,10 +205,10 @@ function escapeSqlLiteral(value: string): string {
 
 function interpolateSqlTemplate(sql: string): string {
   return sql
-    .replace(/\$\{SQL_SHA256:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(sha256(process.env[name] || "")))
-    .replace(/\$\{SHA256:([A-Z0-9_]+)\}/g, (_match, name) => sha256(process.env[name] || ""))
-    .replace(/\$\{SQL:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(process.env[name] || ""))
-    .replace(/\$\{([A-Z0-9_]+)\}/g, (_match, name) => process.env[name] || "");
+    .replace(/$\{SQL_SHA256:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(sha256(process.env[name] || "")))
+    .replace(/$\{SHA256:([A-Z0-9_]+)\}/g, (_match, name) => sha256(process.env[name] || ""))
+    .replace(/$\{SQL:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(process.env[name] || ""))
+    .replace(/$\{([A-Z0-9_]+)\}/g, (_match, name) => process.env[name] || "");
 }
 
 async function resolveDatabaseScriptDirectory(): Promise<string | null> {
@@ -235,12 +235,13 @@ async function resolveDatabaseScriptDirectory(): Promise<string | null> {
 
 async function resolveDatabaseScripts(scriptDirectory: string, dbType: string): Promise<string[]> {
   const entries = await fs.readdir(scriptDirectory);
-  const prefix = `${dbType}-`;
+  const prefix = dbType + "-";
   const sqlFiles = entries
     .filter((name) => name.toLowerCase().endsWith(".sql") && name.startsWith(prefix))
     .sort((a, b) => a.localeCompare(b));
 
   const initOrderPath = path.join(scriptDirectory, "init-order.txt");
+
   try {
     const initOrderContent = await fs.readFile(initOrderPath, "utf8");
     const orderedNames = initOrderContent
@@ -266,7 +267,7 @@ async function runDatabaseInitializationScripts() {
 
   const dbType = (process.env.DB_TYPE || "postgres").trim().toLowerCase();
   if (dbType !== "postgres") {
-    logger.warn(`⚠️ DB_TYPE='${dbType}' no tiene ejecutor SQL implementado actualmente. Se omiten scripts de src/database.`);
+    logger.warn("⚠️ DB_TYPE='" + dbType + "' no tiene ejecutor SQL implementado actualmente. Se omiten scripts de src/database.");
     return;
   }
 
@@ -278,7 +279,7 @@ async function runDatabaseInitializationScripts() {
 
   const orderedScripts = await resolveDatabaseScripts(scriptDirectory, dbType);
   if (orderedScripts.length === 0) {
-    logger.info(`ℹ️ No hay scripts '${dbType}-*.sql' para ejecutar en ${scriptDirectory}.`);
+    logger.info("ℹ️ No hay scripts '" + dbType + "-*.sql' para ejecutar en " + scriptDirectory + ".");
     return;
   }
 
@@ -296,12 +297,12 @@ async function runDatabaseInitializationScripts() {
       const scriptPath = path.join(scriptDirectory, scriptName);
       const sql = interpolateSqlTemplate(await fs.readFile(scriptPath, "utf8")).trim();
       if (!sql) {
-        logger.info(`ℹ️ Script vacío omitido: ${scriptName}`);
+        logger.info("ℹ️ Script vacío omitido: " + scriptName);
         continue;
       }
-      logger.info(`▶ Ejecutando script de inicialización: ${scriptName}`);
+      logger.info("▶ Ejecutando script de inicialización: " + scriptName);
       await client.query(sql);
-      logger.info(`✅ Script ejecutado correctamente: ${scriptName}`);
+      logger.info("✅ Script ejecutado correctamente: " + scriptName);
     }
   } finally {
     client.release();
