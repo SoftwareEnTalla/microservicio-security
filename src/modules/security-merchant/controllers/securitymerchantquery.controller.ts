@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { SecurityMerchantQueryService } from "../services/securitymerchantquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { SecurityMerchantResponse, SecurityMerchantsResponse } from "../types/securitymerchant.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { SecurityMerchant } from "../entities/security-merchant.entity";
+import { SecurityMerchantAuthGuard } from "../guards/securitymerchantauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { SecurityMerchantDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("SecurityMerchant Query")
+@UseGuards(SecurityMerchantAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("securitymerchants/query")
 export class SecurityMerchantQueryController {
   #logger = new Logger(SecurityMerchantQueryController.name);
