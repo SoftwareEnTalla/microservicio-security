@@ -39,9 +39,11 @@ import {
   NotFoundException,
   Get,
   Query,
+  UseGuards,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { AuthenticationCommandService } from "../services/authenticationcommand.service";
+import { AuthenticationAuthGuard } from "../guards/authenticationauthguard.guard";
 
 import { DeleteResult } from "typeorm";
 import { Logger } from "@nestjs/common";
@@ -63,6 +65,9 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
 import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 
 @ApiTags("Authentication Command")
+@UseGuards(AuthenticationAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("authentications/command")
 export class AuthenticationCommandController {
 

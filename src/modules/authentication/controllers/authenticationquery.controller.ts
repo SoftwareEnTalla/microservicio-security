@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { AuthenticationQueryService } from "../services/authenticationquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { AuthenticationResponse, AuthenticationsResponse } from "../types/authentication.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { Authentication } from "../entities/authentication.entity";
+import { AuthenticationAuthGuard } from "../guards/authenticationauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { AuthenticationDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("Authentication Query")
+@UseGuards(AuthenticationAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("authentications/query")
 export class AuthenticationQueryController {
   #logger = new Logger(AuthenticationQueryController.name);
