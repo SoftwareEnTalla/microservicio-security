@@ -56,7 +56,7 @@ import { logger } from '@core/logs/logger';
 @ApiTags("SessionToken Query")
 @UseGuards(SessionTokenAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("sessiontokens/query")
 export class SessionTokenQueryController {
   #logger = new Logger(SessionTokenQueryController.name);

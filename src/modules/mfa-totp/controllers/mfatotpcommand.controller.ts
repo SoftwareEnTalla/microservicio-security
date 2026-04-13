@@ -67,7 +67,7 @@ import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 @ApiTags("MfaTotp Command")
 @UseGuards(MfaTotpAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("mfatotps/command")
 export class MfaTotpCommandController {
 

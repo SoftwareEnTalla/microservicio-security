@@ -67,7 +67,7 @@ import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 @ApiTags("UserProfile Command")
 @UseGuards(UserProfileAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("userprofiles/command")
 export class UserProfileCommandController {
 

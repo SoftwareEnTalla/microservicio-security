@@ -102,7 +102,7 @@ export class LoginCommandController {
   @ApiResponse({ status: 200, type: LoginResponse<Login> })
   @UseGuards(LoginAuthGuard)
   @ApiBearerAuth()
-  @ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+  @ApiUnauthorizedResponse({ description: "Autenticación requerida." })
   @Post("refresh")
   @LogExecutionTime({
     layer: "controller",
@@ -131,7 +131,7 @@ export class LoginCommandController {
   @ApiResponse({ status: 200, type: LogoutResponse })
   @UseGuards(LoginAuthGuard)
   @ApiBearerAuth()
-  @ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+  @ApiUnauthorizedResponse({ description: "Autenticación requerida." })
   @Post("logout")
   @LogExecutionTime({
     layer: "controller",

@@ -67,7 +67,7 @@ import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 @ApiTags("IdentityFederation Command")
 @UseGuards(IdentityFederationAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("identityfederations/command")
 export class IdentityFederationCommandController {
 

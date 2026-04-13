@@ -56,7 +56,7 @@ import { logger } from '@core/logs/logger';
 @ApiTags("SalesManager Query")
 @UseGuards(SalesManagerAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("salesmanagers/query")
 export class SalesManagerQueryController {
   #logger = new Logger(SalesManagerQueryController.name);

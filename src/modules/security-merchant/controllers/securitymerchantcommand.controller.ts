@@ -67,7 +67,7 @@ import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 @ApiTags("SecurityMerchant Command")
 @UseGuards(SecurityMerchantAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("securitymerchants/command")
 export class SecurityMerchantCommandController {
 

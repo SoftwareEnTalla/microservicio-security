@@ -56,7 +56,7 @@ import { logger } from '@core/logs/logger';
 @ApiTags("SystemAdminPolicy Query")
 @UseGuards(SystemAdminPolicyAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("systemadminpolicys/query")
 export class SystemAdminPolicyQueryController {
   #logger = new Logger(SystemAdminPolicyQueryController.name);

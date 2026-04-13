@@ -56,7 +56,7 @@ import { logger } from '@core/logs/logger';
 @ApiTags("MfaTotp Query")
 @UseGuards(MfaTotpAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("mfatotps/query")
 export class MfaTotpQueryController {
   #logger = new Logger(MfaTotpQueryController.name);

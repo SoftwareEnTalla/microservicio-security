@@ -39,6 +39,26 @@ export class LoginResponse<T extends Login> extends GQResponseBase {
   @ApiProperty({ type: Login,nullable:false,description:"Datos de respuesta de Login" })
   @Field(() => Login, { description: "Instancia de Login", nullable: true })
   data?: T;
+
+  @ApiProperty({ type: String, nullable: true, description: "Access token emitido por security" })
+  @Field(() => String, { description: "Access token emitido por security", nullable: true })
+  accessToken?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Refresh token emitido por security" })
+  @Field(() => String, { description: "Refresh token emitido por security", nullable: true })
+  refreshToken?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Código de sesión emitido" })
+  @Field(() => String, { description: "Código de sesión emitido", nullable: true })
+  sessionCode?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Identificador del usuario autenticado" })
+  @Field(() => String, { description: "Identificador del usuario autenticado", nullable: true })
+  userId?: string;
+
+  @ApiProperty({ type: Date, nullable: true, description: "Fecha de expiración de la sesión" })
+  @Field(() => Date, { description: "Fecha de expiración de la sesión", nullable: true })
+  expiresAt?: Date;
 }
 
 @ObjectType({ description: "Respuesta de logins" })
@@ -54,11 +74,37 @@ export class LoginsResponse<T extends Login> extends GQResponseBase {
 
 
 
-@ObjectType({ description: "Respuesta de iniciar autenticación con proveedor externo" })
-export class FederatedLoginStartResponse extends GQResponseBase {}
+@ObjectType({ description: "Devuelve los datos mínimos necesarios para continuar el flujo federado." })
+export class FederatedLoginStartResponse extends GQResponseBase {
+  @ApiProperty({ type: String, nullable: true, description: "Código del proveedor federado" })
+  @Field(() => String, { description: "Código del proveedor federado", nullable: true })
+  providerCode?: string;
 
-@ObjectType({ description: "Respuesta de cerrar sesión" })
-export class LogoutResponse extends GQResponseBase {}
+  @ApiProperty({ type: String, nullable: true, description: "URL de retorno indicada por el consumidor" })
+  @Field(() => String, { description: "URL de retorno indicada por el consumidor", nullable: true })
+  redirectUri?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "URL de autorización del proveedor" })
+  @Field(() => String, { description: "URL de autorización del proveedor", nullable: true })
+  authorizationUrl?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "State del flujo federado" })
+  @Field(() => String, { description: "State del flujo federado", nullable: true })
+  state?: string;
+
+}
+
+@ObjectType({ description: "Devuelve los datos de la sesión cerrada." })
+export class LogoutResponse extends GQResponseBase {
+  @ApiProperty({ type: String, nullable: true, description: "Código de sesión cerrada" })
+  @Field(() => String, { description: "Código de sesión cerrada", nullable: true })
+  sessionCode?: string;
+
+  @ApiProperty({ type: Date, nullable: true, description: "Momento del cierre de sesión" })
+  @Field(() => Date, { description: "Momento del cierre de sesión", nullable: true })
+  logoutAt?: Date;
+
+}
 
 
 

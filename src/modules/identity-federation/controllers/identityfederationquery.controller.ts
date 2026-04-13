@@ -56,7 +56,7 @@ import { logger } from '@core/logs/logger';
 @ApiTags("IdentityFederation Query")
 @UseGuards(IdentityFederationAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("identityfederations/query")
 export class IdentityFederationQueryController {
   #logger = new Logger(IdentityFederationQueryController.name);

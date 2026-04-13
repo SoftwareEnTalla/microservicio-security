@@ -56,7 +56,7 @@ import { logger } from '@core/logs/logger';
 @ApiTags("RbacAcl Query")
 @UseGuards(RbacAclAuthGuard)
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
+@ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("rbacacls/query")
 export class RbacAclQueryController {
   #logger = new Logger(RbacAclQueryController.name);
