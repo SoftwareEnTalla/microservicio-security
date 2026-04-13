@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { RbacAclQueryService } from "../services/rbacaclquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { RbacAclResponse, RbacAclsResponse } from "../types/rbacacl.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { RbacAcl } from "../entities/rbac-acl.entity";
+import { RbacAclAuthGuard } from "../guards/rbacaclauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { RbacAclDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("RbacAcl Query")
+@UseGuards(RbacAclAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("rbacacls/query")
 export class RbacAclQueryController {
   #logger = new Logger(RbacAclQueryController.name);

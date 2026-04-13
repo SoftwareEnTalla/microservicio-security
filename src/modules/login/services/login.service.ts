@@ -28,83 +28,511 @@
  *
  */
 
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { createHash, randomUUID } from "crypto";
 import { Repository } from "typeorm";
 import { Login } from "../entities/login.entity";
 import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
 import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto } from "../dtos/all-dto";
+import { User } from "../../user/entities/user.entity";
+import { SessionToken } from "../../session-token/entities/session-token.entity";
 import { BaseEvent } from "../events/base.event";
+import { FederatedLoginStartedEvent, LoginFailedEvent, LoginLoggedOutEvent, LoginRefreshedEvent, LoginSucceededEvent } from "../events/exporting.event";
 import { EventStoreService } from "../shared/event-store/event-store.service";
 import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 
 @Injectable()
 export class LoginService {
-  private readonly dslDeclaredActionEvents: Record<string, string[]> = {
-    authenticateWithPassword: ["LoginSucceeded", "LoginFailed"],
-    startFederatedLogin: ["FederatedLoginStarted"],
-    refreshSession: ["LoginRefreshed"],
-    logout: ["LoginLoggedOut"],
-  };
-
   constructor(
     @InjectRepository(Login)
-    protected readonly repository: Repository<Login>,
+    private readonly loginRepository: Repository<Login>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(SessionToken)
+    private readonly sessionTokenRepository: Repository<SessionToken>,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
   ) {}
 
-  protected async publishDslDomainEvents(events: BaseEvent[]): Promise<void> {
-    for (const event of events) {
-      await this.eventPublisher.publish(event as any);
-      if (process.env.EVENT_STORE_ENABLED === "true") {
-        await this.eventStore.appendEvent("login-" + event.aggregateId, event);
-      }
-    }
-  }
-
-  protected getDeclaredDslEvents(actionMethod: string): string[] {
-    return this.dslDeclaredActionEvents[actionMethod] || [];
-  }
-
-  protected async completeActionResponse<T>(actionMethod: string, events: BaseEvent[], response: T): Promise<T> {
-    const declaredEvents = this.getDeclaredDslEvents(actionMethod);
-    if (declaredEvents.length > 0 && events.length === 0) {
-      throw new BadRequestException(`La acción ${actionMethod} debe publicar al menos uno de los eventos declarados por DSL: ${declaredEvents.join(", ")}.`);
-    }
-    await this.publishDslDomainEvents(events);
-    return response;
-  }
-
   async authenticateWithPassword(payload: LoginAuthenticateWithPasswordDto): Promise<LoginResponse<Login>> {
-    const pendingEvents: BaseEvent[] = [];
-    void payload;
-    void this.repository;
-    void pendingEvents;
-    throw new BadRequestException('La acción Autenticar localmente con identificador y contraseña requiere implementación de negocio específica en el servicio Login. Debe persistir con repositorios directos y publicar los eventos declarados por DSL: LoginSucceeded, LoginFailed.');
+    const identifier = (payload.identifier || "").trim();
+    const password = payload.password || "";
+
+    if (!identifier || !password) {
+      throw new BadRequestException("El identificador y la contraseña son obligatorios.");
+    }
+
+    const user = await this.findUserByIdentifier(identifier);
+
+    if (!user) {
+      await this.registerFailedLogin(identifier, "Usuario no encontrado.");
+      throw new UnauthorizedException("Credenciales inválidas.");
+    }
+
+    if (!user.isActive || (user.accountStatus || "").toUpperCase() !== "ACTIVE") {
+      await this.registerFailedLogin(identifier, `La cuenta ${user.accountStatus || 'INACTIVA'} no permite autenticación.`);
+      throw new ForbiddenException("La cuenta no está habilitada para autenticación local.");
+    }
+
+    if (user.federatedOnly) {
+      await this.registerFailedLogin(identifier, "La cuenta solo admite autenticación federada.");
+      throw new ForbiddenException("La cuenta solo admite autenticación federada.");
+    }
+
+    if (!this.matchesPassword(password, user.passwordHash)) {
+      await this.registerFailedLogin(identifier, "Contraseña inválida.");
+      throw new UnauthorizedException("Credenciales inválidas.");
+    }
+
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
+    const sessionCode = this.generateOpaqueToken("session");
+    const refreshToken = this.generateOpaqueToken("refresh");
+    const accessToken = this.generateOpaqueToken("access");
+
+    const sessionToken = new SessionToken();
+    Object.assign(sessionToken, {
+      name: `Sesión de ${identifier}`,
+      description: `Refresh token emitido para ${identifier}`,
+      createdBy: "login-service",
+      isActive: true,
+      userId: user.id,
+      subscriberId: "swagger",
+      sessionCode,
+      tokenId: this.sha256(refreshToken),
+      tokenType: "REFRESH_TOKEN",
+      issuedAt,
+      expiresAt,
+      revokedAt: undefined,
+      revocationReason: "",
+      logoutAt: undefined,
+      certificationStatus: "ISSUED",
+      authenticatedUserAcls: this.resolveUserAcls(user),
+      metadata: {
+        identifier,
+        accessTokenHash: this.sha256(accessToken),
+      },
+    });
+
+    await this.sessionTokenRepository.save(sessionToken);
+
+    const login = this.loginRepository.create({
+      name: `Login ${identifier}`,
+      description: `Autenticación local satisfactoria para ${identifier}`,
+      createdBy: "login-service",
+      isActive: true,
+      correlationCode: this.generateOpaqueToken("login"),
+      userId: user.id,
+      loginIdentifier: identifier,
+      loginIdentifierType: this.resolveIdentifierType(user, identifier),
+      flowType: "PASSWORD",
+      authMethod: "LOCAL_PASSWORD",
+      providerCode: "LOCAL",
+      subscriberId: "swagger",
+      sessionCode,
+      authStatus: "SUCCEEDED",
+      failureReason: "",
+      ipAddress: "",
+      deviceFingerprint: "",
+      userAgent: "",
+      accessTokenIssued: true,
+      refreshTokenIssued: true,
+      pkceRequired: false,
+      authenticatedUserAcls: this.resolveUserAcls(user),
+      occurredAt: issuedAt,
+      metadata: {
+        refreshTokenId: sessionToken.tokenId,
+        accessTokenHash: this.sha256(accessToken),
+      },
+    });
+
+    const persistedLogin = await this.loginRepository.save(login);
+
+    await this.userRepository.update(user.id, {
+      lastLoginAt: issuedAt,
+    });
+
+    await this.publishDomainEvent(
+      LoginSucceededEvent.create(
+        String(persistedLogin.id),
+        persistedLogin,
+        String(persistedLogin.createdBy || "login-service"),
+        String(persistedLogin.correlationCode || persistedLogin.id),
+      ),
+    );
+
+    return this.buildLoginResponse(persistedLogin, {
+      accessToken,
+      refreshToken,
+      sessionCode,
+      userId: user.id,
+      expiresAt,
+      message: "Autenticación completada correctamente.",
+    });
   }
 
   async startFederatedLogin(payload: LoginStartFederatedLoginDto): Promise<FederatedLoginStartResponse> {
-    const pendingEvents: BaseEvent[] = [];
-    void payload;
-    void this.repository;
-    void pendingEvents;
-    throw new BadRequestException('La acción Iniciar autenticación con proveedor externo requiere implementación de negocio específica en el servicio Login. Debe persistir con repositorios directos y publicar los eventos declarados por DSL: FederatedLoginStarted.');
+    const providerCode = (payload.providerCode || "").trim();
+    const redirectUri = (payload.redirectUri || "").trim();
+
+    if (!providerCode || !redirectUri) {
+      throw new BadRequestException("El proveedor y la URL de retorno son obligatorios.");
+    }
+
+    const state = this.generateOpaqueToken("fed");
+    const authorizationBaseUrl = process.env.WSO2_AUTHORIZATION_URL || "http://localhost:9443/oauth2/authorize";
+    const url = new URL(authorizationBaseUrl);
+    url.searchParams.set("provider", providerCode);
+    url.searchParams.set("redirect_uri", redirectUri);
+    if (payload.loginHint) {
+      url.searchParams.set("login_hint", payload.loginHint.trim());
+    }
+    url.searchParams.set("state", state);
+
+    const occurredAt = new Date();
+    const login = this.loginRepository.create({
+      name: `Federated login ${providerCode}`,
+      description: `Inicio de autenticación federada con ${providerCode}`,
+      createdBy: "login-service",
+      isActive: true,
+      correlationCode: this.generateOpaqueToken("login"),
+      loginIdentifier: payload.loginHint?.trim() || providerCode,
+      loginIdentifierType: payload.loginHint ? "LOGIN_HINT" : "PROVIDER_CODE",
+      flowType: "FEDERATED",
+      authMethod: "OIDC",
+      providerCode,
+      subscriberId: "swagger",
+      sessionCode: state,
+      authStatus: "REDIRECT_REQUIRED",
+      failureReason: "",
+      ipAddress: "",
+      deviceFingerprint: "",
+      userAgent: "",
+      accessTokenIssued: false,
+      refreshTokenIssued: false,
+      pkceRequired: false,
+      authenticatedUserAcls: {},
+      occurredAt,
+      metadata: {
+        redirectUri,
+        authorizationUrl: url.toString(),
+      },
+    });
+
+    const persistedLogin = await this.loginRepository.save(login);
+
+    await this.publishDomainEvent(
+      FederatedLoginStartedEvent.create(
+        String(persistedLogin.id),
+        persistedLogin,
+        String(persistedLogin.createdBy || "login-service"),
+        String(persistedLogin.correlationCode || persistedLogin.id),
+      ),
+    );
+
+    return {
+      ok: true,
+      message: "Flujo federado inicializado correctamente.",
+      providerCode,
+      redirectUri,
+      authorizationUrl: url.toString(),
+      state,
+    };
   }
 
   async refreshSession(payload: LoginRefreshSessionDto): Promise<LoginResponse<Login>> {
-    const pendingEvents: BaseEvent[] = [];
-    void payload;
-    void this.repository;
-    void pendingEvents;
-    throw new BadRequestException('La acción Renovar una sesión vigente requiere implementación de negocio específica en el servicio Login. Debe persistir con repositorios directos y publicar los eventos declarados por DSL: LoginRefreshed.');
+    const refreshToken = (payload.refreshToken || "").trim();
+
+    if (!refreshToken) {
+      throw new BadRequestException("El refresh token es obligatorio.");
+    }
+
+    const persistedSession = await this.sessionTokenRepository.findOne({
+      where: { tokenId: this.sha256(refreshToken), tokenType: "REFRESH_TOKEN" },
+    });
+
+    if (!persistedSession || !persistedSession.isActive) {
+      throw new UnauthorizedException("Refresh token inválido.");
+    }
+
+    if (persistedSession.expiresAt && persistedSession.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException("El refresh token expiró.");
+    }
+
+    if (["REVOKED", "LOGGED_OUT"].includes((persistedSession.certificationStatus || "").toUpperCase())) {
+      throw new UnauthorizedException("La sesión ya no está disponible.");
+    }
+
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
+    const rotatedRefreshToken = this.generateOpaqueToken("refresh");
+    const accessToken = this.generateOpaqueToken("access");
+
+    await this.sessionTokenRepository.update(persistedSession.id, {
+      tokenId: this.sha256(rotatedRefreshToken),
+      issuedAt,
+      expiresAt,
+      certificationStatus: "ISSUED",
+      revokedAt: undefined,
+      revocationReason: "",
+      logoutAt: undefined,
+      metadata: {
+        ...(persistedSession.metadata || {}),
+        accessTokenHash: this.sha256(accessToken),
+        refreshedAt: issuedAt.toISOString(),
+      } as any,
+    });
+
+    const login = this.loginRepository.create({
+      name: `Refresh ${persistedSession.sessionCode}`,
+      description: `Renovación de sesión ${persistedSession.sessionCode}`,
+      createdBy: "login-service",
+      isActive: true,
+      correlationCode: this.generateOpaqueToken("login"),
+      userId: persistedSession.userId,
+      loginIdentifier: persistedSession.sessionCode,
+      loginIdentifierType: "SESSION_CODE",
+      flowType: "REFRESH",
+      authMethod: "LOCAL_PASSWORD",
+      providerCode: "LOCAL",
+      subscriberId: persistedSession.subscriberId || "swagger",
+      sessionCode: persistedSession.sessionCode,
+      authStatus: "REFRESHED",
+      failureReason: "",
+      ipAddress: "",
+      deviceFingerprint: "",
+      userAgent: "",
+      accessTokenIssued: true,
+      refreshTokenIssued: true,
+      pkceRequired: false,
+      authenticatedUserAcls: persistedSession.authenticatedUserAcls || {},
+      occurredAt: issuedAt,
+      metadata: {
+        refreshTokenId: this.sha256(rotatedRefreshToken),
+        accessTokenHash: this.sha256(accessToken),
+      },
+    });
+
+    const persistedLogin = await this.loginRepository.save(login);
+
+    await this.publishDomainEvent(
+      LoginRefreshedEvent.create(
+        String(persistedLogin.id),
+        persistedLogin,
+        String(persistedLogin.createdBy || "login-service"),
+        String(persistedLogin.correlationCode || persistedLogin.id),
+      ),
+    );
+
+    return this.buildLoginResponse(persistedLogin, {
+      accessToken,
+      refreshToken: rotatedRefreshToken,
+      sessionCode: persistedSession.sessionCode,
+      userId: persistedSession.userId,
+      expiresAt,
+      message: "Sesión renovada correctamente.",
+    });
   }
 
   async logout(payload: LoginLogoutDto): Promise<LogoutResponse> {
-    const pendingEvents: BaseEvent[] = [];
-    void payload;
-    void this.repository;
-    void pendingEvents;
-    throw new BadRequestException('La acción Cerrar sesión requiere implementación de negocio específica en el servicio Login. Debe persistir con repositorios directos y publicar los eventos declarados por DSL: LoginLoggedOut.');
+    const sessionCode = (payload.sessionCode || "").trim();
+    const refreshToken = (payload.refreshToken || "").trim();
+
+    if (!sessionCode && !refreshToken) {
+      throw new BadRequestException("Debe indicar el código de sesión o el refresh token.");
+    }
+
+    const persistedSession = await this.sessionTokenRepository.findOne({
+      where: sessionCode
+        ? { sessionCode, tokenType: "REFRESH_TOKEN" }
+        : { tokenId: this.sha256(refreshToken), tokenType: "REFRESH_TOKEN" },
+    });
+
+    if (!persistedSession) {
+      throw new UnauthorizedException("No se encontró una sesión activa para cerrar.");
+    }
+
+    const logoutAt = new Date();
+
+    await this.sessionTokenRepository.update(persistedSession.id, {
+      certificationStatus: "LOGGED_OUT",
+      logoutAt,
+      revokedAt: logoutAt,
+      revocationReason: "Cierre de sesión solicitado por el usuario.",
+      isActive: false,
+    });
+
+    const logoutLogin = await this.loginRepository.save(
+      this.loginRepository.create({
+        name: `Logout ${persistedSession.sessionCode}`,
+        description: `Cierre de sesión ${persistedSession.sessionCode}`,
+        createdBy: "login-service",
+        isActive: true,
+        correlationCode: this.generateOpaqueToken("login"),
+        userId: persistedSession.userId,
+        loginIdentifier: persistedSession.sessionCode,
+        loginIdentifierType: "SESSION_CODE",
+        flowType: "LOGOUT",
+        authMethod: "LOCAL_PASSWORD",
+        providerCode: "LOCAL",
+        subscriberId: persistedSession.subscriberId || "swagger",
+        sessionCode: persistedSession.sessionCode,
+        authStatus: "LOGGED_OUT",
+        failureReason: "",
+        ipAddress: "",
+        deviceFingerprint: "",
+        userAgent: "",
+        accessTokenIssued: false,
+        refreshTokenIssued: false,
+        pkceRequired: false,
+        authenticatedUserAcls: persistedSession.authenticatedUserAcls || {},
+        occurredAt: logoutAt,
+        metadata: {
+          logoutReason: "USER_REQUESTED",
+        },
+      }),
+    );
+
+    await this.publishDomainEvent(
+      LoginLoggedOutEvent.create(
+        String(logoutLogin.id),
+        logoutLogin,
+        String(logoutLogin.createdBy || "login-service"),
+        String(logoutLogin.correlationCode || logoutLogin.id),
+      ),
+    );
+
+    return {
+      ok: true,
+      message: "Sesión cerrada correctamente.",
+      sessionCode: persistedSession.sessionCode,
+      logoutAt,
+    };
+  }
+
+  private async findUserByIdentifier(identifier: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: [
+        { username: identifier },
+        { email: identifier },
+        { phone: identifier },
+        { identifierValue: identifier },
+      ],
+    });
+  }
+
+  private async registerFailedLogin(identifier: string, reason: string): Promise<Login> {
+    const failedLogin = this.loginRepository.create({
+      name: `Login fallido ${identifier}`,
+      description: `Intento fallido de autenticación para ${identifier}`,
+      createdBy: "login-service",
+      isActive: true,
+      correlationCode: this.generateOpaqueToken("login"),
+      loginIdentifier: identifier,
+      loginIdentifierType: "UNKNOWN",
+      flowType: "PASSWORD",
+      authMethod: "LOCAL_PASSWORD",
+      providerCode: "LOCAL",
+      subscriberId: "swagger",
+      sessionCode: "",
+      authStatus: "FAILED",
+      failureReason: reason,
+      ipAddress: "",
+      deviceFingerprint: "",
+      userAgent: "",
+      accessTokenIssued: false,
+      refreshTokenIssued: false,
+      pkceRequired: false,
+      authenticatedUserAcls: {},
+      occurredAt: new Date(),
+      metadata: {},
+    });
+
+    const persistedLogin = await this.loginRepository.save(failedLogin);
+    await this.publishDomainEvent(
+      LoginFailedEvent.create(
+        String(persistedLogin.id),
+        persistedLogin,
+        String(persistedLogin.createdBy || "login-service"),
+        String(persistedLogin.correlationCode || persistedLogin.id),
+      ),
+    );
+    return persistedLogin;
+  }
+
+  private buildLoginResponse(login: Login, extras: {
+    accessToken: string;
+    refreshToken: string;
+    sessionCode: string;
+    userId: string;
+    expiresAt: Date;
+    message: string;
+  }): LoginResponse<Login> {
+    return {
+      ok: true,
+      message: extras.message,
+      data: login,
+      accessToken: extras.accessToken,
+      refreshToken: extras.refreshToken,
+      sessionCode: extras.sessionCode,
+      userId: extras.userId,
+      expiresAt: extras.expiresAt,
+    };
+  }
+
+  private resolveUserAcls(user: User): Record<string, any> {
+    return (user.metadata && typeof user.metadata === "object" && user.metadata.acls)
+      ? user.metadata.acls
+      : {};
+  }
+
+  private resolveIdentifierType(user: User, identifier: string): string {
+    if (user.username === identifier) {
+      return "USERNAME";
+    }
+    if (user.email === identifier) {
+      return "EMAIL";
+    }
+    if (user.phone === identifier) {
+      return "PHONE";
+    }
+    return (user.identifierType || "IDENTIFIER_VALUE").toUpperCase();
+  }
+
+  private matchesPassword(candidate: string, storedHash: string): boolean {
+    const normalizedStored = (storedHash || "").trim();
+    if (!normalizedStored) {
+      return false;
+    }
+
+    const sha256 = this.sha256(candidate);
+    const normalizedLower = normalizedStored.toLowerCase();
+
+    return normalizedStored === candidate
+      || normalizedLower === sha256
+      || normalizedLower === `sha256:${sha256}`
+      || normalizedLower === `sha256$${sha256}`;
+  }
+
+  private sha256(value: string): string {
+    return createHash("sha256").update(value).digest("hex");
+  }
+
+  private generateOpaqueToken(prefix: string): string {
+    return `${prefix}_${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}`;
+  }
+
+  private async publishDomainEvent(event: BaseEvent): Promise<void> {
+    await this.publishDomainEvents([event]);
+  }
+
+  private async publishDomainEvents(events: BaseEvent[]): Promise<void> {
+    for (const event of events) {
+      await this.eventPublisher.publish(event as any);
+      if (process.env.EVENT_STORE_ENABLED === "true") {
+        await this.eventStore.appendEvent(`login-${event.aggregateId}`, event);
+      }
+    }
   }
 }
