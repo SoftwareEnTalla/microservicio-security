@@ -39,6 +39,8 @@ export class RbacAclResponse<T extends RbacAcl> extends GQResponseBase {
   @ApiProperty({ type: RbacAcl,nullable:false,description:"Datos de respuesta de RbacAcl" })
   @Field(() => RbacAcl, { description: "Instancia de RbacAcl", nullable: true })
   data?: T;
+
+
 }
 
 @ObjectType({ description: "Respuesta de rbacacls" })
