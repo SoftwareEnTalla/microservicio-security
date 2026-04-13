@@ -46,6 +46,9 @@ export interface KafkaSubscribeOptions {
 @Injectable()
 export class KafkaService implements OnModuleDestroy {
   private readonly logger = new Logger(KafkaService.name);
+  private readonly moduleMessagingKey = 'login';
+  private readonly kafkaClientId: string;
+  private readonly kafkaGroupId: string;
   private kafka: Kafka;
   private producer: Producer;
   private consumer: Consumer;
@@ -62,12 +65,16 @@ export class KafkaService implements OnModuleDestroy {
       .split(',')
       .map((broker) => broker.trim())
       .filter(Boolean);
+    const baseClientId = (process.env.KAFKA_CLIENT_ID || 'nestjs-client').trim();
+    const baseGroupId = (process.env.KAFKA_GROUP_ID || 'nestjs-group').trim();
+    this.kafkaClientId = ;
+    this.kafkaGroupId = ;
     this.kafka = new Kafka({
-      clientId: process.env.KAFKA_CLIENT_ID || 'nestjs-client',
+      clientId: this.kafkaClientId,
       brokers,
     });
     this.producer = this.kafka.producer();
-    this.consumer = this.kafka.consumer({ groupId: process.env.KAFKA_GROUP_ID || 'nestjs-group' });
+    this.consumer = this.kafka.consumer({ groupId: this.kafkaGroupId });
     this.adminClient = this.kafka.admin();
   }
 
@@ -191,7 +198,7 @@ export class KafkaService implements OnModuleDestroy {
   ): Promise<void> {
     const topics = Array.isArray(topic) ? topic : [topic];
     const replayConsumer = this.kafka.consumer({
-      groupId: (process.env.KAFKA_GROUP_ID || 'nestjs-group') + '-replay-' + Date.now(),
+      groupId: ,
     });
 
     await replayConsumer.connect();
