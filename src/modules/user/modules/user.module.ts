@@ -34,6 +34,7 @@ import { UserCommandController } from "../controllers/usercommand.controller";
 import { UserQueryController } from "../controllers/userquery.controller";
 import { UserCommandService } from "../services/usercommand.service";
 import { UserQueryService } from "../services/userquery.service";
+
 import { UserCommandRepository } from "../repositories/usercommand.repository";
 import { UserQueryRepository } from "../repositories/userquery.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -74,6 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     UserQueryService,
     UserCommandService,
+  
     //Repositories
     UserCommandRepository,
     UserQueryRepository,
@@ -113,6 +115,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     UserQueryService,
     UserCommandService,
+  
     //Repositories
     UserCommandRepository,
     UserQueryRepository,
