@@ -205,10 +205,10 @@ function escapeSqlLiteral(value: string): string {
 
 function interpolateSqlTemplate(sql: string): string {
   return sql
-    .replace(/\$\{SQL_SHA256:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(sha256(process.env[name] || "")))
-    .replace(/\$\{SHA256:([A-Z0-9_]+)\}/g, (_match, name) => sha256(process.env[name] || ""))
-    .replace(/\$\{SQL:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(process.env[name] || ""))
-    .replace(/\$\{([A-Z0-9_]+)\}/g, (_match, name) => process.env[name] || "");
+    .replace(/$\{SQL_SHA256:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(sha256(process.env[name] || "")))
+    .replace(/$\{SHA256:([A-Z0-9_]+)\}/g, (_match, name) => sha256(process.env[name] || ""))
+    .replace(/$\{SQL:([A-Z0-9_]+)\}/g, (_match, name) => escapeSqlLiteral(process.env[name] || ""))
+    .replace(/$\{([A-Z0-9_]+)\}/g, (_match, name) => process.env[name] || "");
 }
 
 async function resolveDatabaseScriptDirectory(): Promise<string | null> {
