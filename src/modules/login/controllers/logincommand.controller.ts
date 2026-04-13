@@ -29,12 +29,13 @@
  */
 
 
-import { Controller, Body, Logger, Post, Get, Put, Patch, Delete } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
+import { Controller, Body, Logger, Post, Get, Put, Patch, Delete, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LoginService } from "../services/login.service";
 import { Login } from "../entities/login.entity";
 import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
 import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto } from "../dtos/all-dto";
+import { LoginAuthGuard } from "../guards/loginauthguard.guard";
 import { Helper } from "src/common/helpers/helpers";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { LoggerClient } from "src/common/logger/logger.client";
@@ -99,6 +100,9 @@ export class LoginCommandController {
   @ApiOperation({ summary: "Renovar una sesión vigente" })
   @ApiBody({ type: LoginRefreshSessionDto })
   @ApiResponse({ status: 200, type: LoginResponse<Login> })
+  @UseGuards(LoginAuthGuard)
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
   @Post("refresh")
   @LogExecutionTime({
     layer: "controller",
@@ -125,6 +129,9 @@ export class LoginCommandController {
   @ApiOperation({ summary: "Cerrar sesión" })
   @ApiBody({ type: LoginLogoutDto })
   @ApiResponse({ status: 200, type: LogoutResponse })
+  @UseGuards(LoginAuthGuard)
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
   @Post("logout")
   @LogExecutionTime({
     layer: "controller",
