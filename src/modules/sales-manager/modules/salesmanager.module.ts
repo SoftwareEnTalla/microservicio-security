@@ -34,6 +34,7 @@ import { SalesManagerCommandController } from "../controllers/salesmanagercomman
 import { SalesManagerQueryController } from "../controllers/salesmanagerquery.controller";
 import { SalesManagerCommandService } from "../services/salesmanagercommand.service";
 import { SalesManagerQueryService } from "../services/salesmanagerquery.service";
+
 import { SalesManagerCommandRepository } from "../repositories/salesmanagercommand.repository";
 import { SalesManagerQueryRepository } from "../repositories/salesmanagerquery.repository";
 import { SalesManagerRepository } from "../repositories/salesmanager.repository";
@@ -75,6 +76,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SalesManagerQueryService,
     SalesManagerCommandService,
+  
     //Repositories
     SalesManagerCommandRepository,
     SalesManagerQueryRepository,
@@ -115,6 +117,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SalesManagerQueryService,
     SalesManagerCommandService,
+  
     //Repositories
     SalesManagerCommandRepository,
     SalesManagerQueryRepository,
