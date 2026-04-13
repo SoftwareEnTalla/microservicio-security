@@ -36,14 +36,16 @@ import {
   Param,
   NotFoundException,
   Logger,
+  UseGuards,
 } from "@nestjs/common";
 import { IdentityFederationQueryService } from "../services/identityfederationquery.service";
 import { FindManyOptions } from "typeorm";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { IdentityFederationResponse, IdentityFederationsResponse } from "../types/identityfederation.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { IdentityFederation } from "../entities/identity-federation.entity";
+import { IdentityFederationAuthGuard } from "../guards/identityfederationauthguard.guard";
 import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
@@ -52,6 +54,9 @@ import { IdentityFederationDto } from "../dtos/all-dto";
 import { logger } from '@core/logs/logger';
 
 @ApiTags("IdentityFederation Query")
+@UseGuards(IdentityFederationAuthGuard)
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ status: 401, description: "Autenticación requerida." })
 @Controller("identityfederations/query")
 export class IdentityFederationQueryController {
   #logger = new Logger(IdentityFederationQueryController.name);
