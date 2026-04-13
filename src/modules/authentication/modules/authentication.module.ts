@@ -34,6 +34,7 @@ import { AuthenticationCommandController } from "../controllers/authenticationco
 import { AuthenticationQueryController } from "../controllers/authenticationquery.controller";
 import { AuthenticationCommandService } from "../services/authenticationcommand.service";
 import { AuthenticationQueryService } from "../services/authenticationquery.service";
+
 import { AuthenticationCommandRepository } from "../repositories/authenticationcommand.repository";
 import { AuthenticationQueryRepository } from "../repositories/authenticationquery.repository";
 import { AuthenticationRepository } from "../repositories/authentication.repository";
@@ -76,6 +77,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     AuthenticationQueryService,
     AuthenticationCommandService,
+  
     //Repositories
     AuthenticationCommandRepository,
     AuthenticationQueryRepository,
@@ -117,6 +119,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     AuthenticationQueryService,
     AuthenticationCommandService,
+  
     //Repositories
     AuthenticationCommandRepository,
     AuthenticationQueryRepository,
