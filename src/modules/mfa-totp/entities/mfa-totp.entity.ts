@@ -175,6 +175,50 @@ export class MfaTotp extends BaseEntity {
   lastUsedAt?: Date = new Date();
 
   @ApiProperty({
+    type: () => String,
+    nullable: true,
+    description: 'Hash SHA-256 del PIN de activación de 6 dígitos',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'Hash SHA-256 del PIN de activación de 6 dígitos', nullable: true })
+  @Column({ type: 'varchar', nullable: true, length: 255, comment: 'Hash SHA-256 del PIN de activación de 6 dígitos' })
+  activationPin?: string;
+
+  @ApiProperty({
+    type: () => Date,
+    nullable: true,
+    description: 'Fecha de expiración del PIN de activación',
+  })
+  @IsDate()
+  @IsOptional()
+  @Field(() => Date, { description: 'Fecha de expiración del PIN de activación', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, comment: 'Fecha de expiración del PIN de activación' })
+  activationPinExpiresAt?: Date;
+
+  @ApiProperty({
+    type: () => String,
+    nullable: false,
+    description: 'Modo de entrega del PIN de activación: LOCAL, SMS, EMAIL',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { description: 'Modo de entrega del PIN de activación', nullable: false })
+  @Column({ type: 'varchar', nullable: false, length: 10, default: 'LOCAL', comment: 'Modo de entrega del PIN de activación' })
+  deliveryMode!: string;
+
+  @ApiProperty({
+    type: () => Boolean,
+    nullable: false,
+    description: 'Indica si el PIN fue verificado exitosamente',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  @Field(() => Boolean, { description: 'Indica si el PIN fue verificado exitosamente', nullable: false })
+  @Column({ type: 'boolean', nullable: false, default: false, comment: 'Indica si el PIN fue verificado exitosamente' })
+  pinVerified!: boolean;
+
+  @ApiProperty({
     type: () => Object,
     nullable: true,
     description: 'Metadatos de configuración MFA',
@@ -188,8 +232,12 @@ export class MfaTotp extends BaseEntity {
   protected executeDslLifecycle(): void {
     // Rule: totp-enabled-requires-secret
     // No se puede habilitar TOTP sin una referencia válida al secreto.
-    if (!(this.totpEnabled === true && !(this.totpSecretRef === undefined || this.totpSecretRef === null || (typeof this.totpSecretRef === 'string' && String(this.totpSecretRef).trim() === '') || (Array.isArray(this.totpSecretRef) && this.totpSecretRef.length === 0) || (typeof this.totpSecretRef === 'object' && !Array.isArray(this.totpSecretRef) && Object.prototype.toString.call(this.totpSecretRef) === '[object Object]' && Object.keys(Object(this.totpSecretRef)).length === 0)))) {
-      throw new Error('MFA_001: TOTP habilitado requiere secreto configurado');
+    // Solo aplica cuando totpEnabled es true explícitamente.
+    if (this.totpEnabled === true) {
+      const secretEmpty = this.totpSecretRef === undefined || this.totpSecretRef === null || (typeof this.totpSecretRef === 'string' && String(this.totpSecretRef).trim() === '');
+      if (secretEmpty) {
+        throw new Error('MFA_001: TOTP habilitado requiere secreto configurado');
+      }
     }
   }
 

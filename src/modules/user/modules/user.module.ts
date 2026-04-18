@@ -34,6 +34,7 @@ import { UserCommandController } from "../controllers/usercommand.controller";
 import { UserQueryController } from "../controllers/userquery.controller";
 import { UserCommandService } from "../services/usercommand.service";
 import { UserQueryService } from "../services/userquery.service";
+import { UserService } from "../services/user.service";
 
 import { UserCommandRepository } from "../repositories/usercommand.repository";
 import { UserQueryRepository } from "../repositories/userquery.repository";
@@ -43,6 +44,8 @@ import { UserAuthGuard } from "../guards/userauthguard.guard";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "../entities/user.entity";
 import { BaseEntity } from "../entities/base.entity";
+import { MfaTotp } from "../../mfa-totp/entities/mfa-totp.entity";
+import { BaseEntity as MfaTotpBaseEntity } from "../../mfa-totp/entities/base.entity";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -66,13 +69,14 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, User]), // Incluir BaseEntity para herencia
+    TypeOrmModule.forFeature([BaseEntity, User, MfaTotpBaseEntity, MfaTotp]), // Incluir BaseEntity para herencia
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [UserCommandController, UserQueryController],
   providers: [
     //Services
     EventStoreService,
+    UserService,
     UserQueryService,
     UserCommandService,
   
@@ -113,6 +117,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     KafkaModule,
     //Services
     EventStoreService,
+    UserService,
     UserQueryService,
     UserCommandService,
   

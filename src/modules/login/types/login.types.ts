@@ -59,6 +59,18 @@ export class LoginResponse<T extends Login> extends GQResponseBase {
   @ApiProperty({ type: Date, nullable: true, description: "Fecha de expiración de la sesión" })
   @Field(() => Date, { description: "Fecha de expiración de la sesión", nullable: true })
   expiresAt?: Date;
+
+  @ApiProperty({ type: Boolean, nullable: true, description: "Indica que la cuenta requiere activación por PIN antes de autenticarse" })
+  @Field(() => Boolean, { description: "Indica si se requiere activación por PIN", nullable: true })
+  activationRequired?: boolean;
+
+  @ApiProperty({ type: String, nullable: true, description: "PIN de activación de 6 dígitos (solo en modo LOCAL)" })
+  @Field(() => String, { description: "PIN de activación en modo LOCAL", nullable: true })
+  activationPin?: string;
+
+  @ApiProperty({ type: String, nullable: true, description: "Modo de entrega del PIN: LOCAL, SMS, EMAIL" })
+  @Field(() => String, { description: "Modo de entrega del PIN", nullable: true })
+  deliveryMode?: string;
 }
 
 @ObjectType({ description: "Respuesta de logins" })

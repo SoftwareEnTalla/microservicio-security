@@ -31,13 +31,14 @@
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { EventBus } from "@nestjs/cqrs";
-import { createHash, randomUUID } from "crypto";
+import { createHash, randomInt, randomUUID } from "crypto";
 import { Repository } from "typeorm";
 import { Login } from "../entities/login.entity";
 import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
 import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto } from "../dtos/all-dto";
 import { User } from "../../user/entities/user.entity";
 import { SessionToken } from "../../session-token/entities/session-token.entity";
+import { MfaTotp } from "../../mfa-totp/entities/mfa-totp.entity";
 import { BaseEvent } from "../events/base.event";
 import { FederatedLoginStartedEvent, LoginFailedEvent, LoginLoggedOutEvent, LoginRefreshedEvent, LoginSucceededEvent } from "../events/exporting.event";
 import { EventStoreService } from "../shared/event-store/event-store.service";
@@ -52,6 +53,8 @@ export class LoginService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(SessionToken)
     private readonly sessionTokenRepository: Repository<SessionToken>,
+    @InjectRepository(MfaTotp)
+    private readonly mfaTotpRepository: Repository<MfaTotp>,
     private readonly eventBus: EventBus,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
@@ -73,6 +76,17 @@ export class LoginService {
     }
 
     if (!user.isActive || (user.accountStatus || "").toUpperCase() !== "ACTIVE") {
+      // Permitir flujo de activación por PIN para cuentas PENDING_VERIFICATION
+      const isPendingVerification = (user.accountStatus || "").toUpperCase() === "PENDING_VERIFICATION";
+      if (isPendingVerification) {
+        // Verificar contraseña primero
+        if (!this.matchesPassword(password, user.passwordHash)) {
+          await this.registerFailedLogin(identifier, "Contraseña inválida.");
+          throw new UnauthorizedException("Credenciales inválidas.");
+        }
+        // Exigir PIN de activación
+        return this.handleActivationByPin(user, payload, identifier);
+      }
       await this.registerFailedLogin(identifier, `La cuenta ${user.accountStatus || 'INACTIVA'} no permite autenticación.`);
       throw new ForbiddenException("La cuenta no está habilitada para autenticación local.");
     }
@@ -537,5 +551,212 @@ export class LoginService {
         await this.eventStore.appendEvent(`login-${event.aggregateId}`, event);
       }
     }
+  }
+
+  private async handleActivationByPin(
+    user: User,
+    payload: LoginAuthenticateWithPasswordDto,
+    identifier: string,
+  ): Promise<LoginResponse<Login>> {
+    const activationPin = (payload.activationPin || "").trim();
+
+    const mfaTotp = await this.mfaTotpRepository.findOne({ where: { userId: user.id } });
+    if (!mfaTotp) {
+      await this.registerFailedLogin(identifier, "No se encontró configuración MFA para esta cuenta.");
+      throw new ForbiddenException("No se encontró configuración de activación para esta cuenta.");
+    }
+
+    // PASO 1: Si NO viene PIN, devolver respuesta indicando que se requiere activación
+    if (!activationPin) {
+      // Registrar intento como ACTIVATION_REQUIRED (no como fallo)
+      const login = this.loginRepository.create({
+        name: `Login ${identifier}`,
+        description: `Activación pendiente para ${identifier}`,
+        createdBy: "login-service",
+        isActive: true,
+        correlationCode: this.generateOpaqueToken("login"),
+        userId: user.id,
+        loginIdentifier: identifier,
+        loginIdentifierType: this.resolveIdentifierType(user, identifier),
+        flowType: "PASSWORD",
+        authMethod: "LOCAL_PASSWORD",
+        providerCode: "LOCAL",
+        subscriberId: "swagger",
+        sessionCode: "",
+        authStatus: "ACTIVATION_REQUIRED",
+        failureReason: "",
+        ipAddress: "",
+        deviceFingerprint: "",
+        userAgent: "",
+        accessTokenIssued: false,
+        refreshTokenIssued: false,
+        pkceRequired: false,
+        authenticatedUserAcls: {},
+        occurredAt: new Date(),
+        metadata: { activationRequired: true, deliveryMode: mfaTotp.deliveryMode },
+      });
+
+      const persistedLogin = await this.loginRepository.save(login);
+
+      // En modo LOCAL, regenerar un PIN fresco y devolvérselo al usuario
+      const response: LoginResponse<Login> = {
+        ok: true,
+        message: "La cuenta requiere activación. Introduzca el PIN de 6 dígitos en el campo activationPin junto con sus credenciales.",
+        data: persistedLogin,
+        activationRequired: true,
+        deliveryMode: mfaTotp.deliveryMode,
+      };
+
+      if (mfaTotp.deliveryMode === "LOCAL") {
+        // Si el PIN aún es válido, regenerar PIN en texto plano para mostrarlo
+        // Nota: el PIN original está hasheado, hay que regenerar uno nuevo
+        const newPin = String(randomInt(0, 1000000)).padStart(6, "0");
+        const newPinHash = createHash("sha256").update(newPin).digest("hex");
+        const expiryMinutes = Number(process.env.MFA_PIN_EXPIRY_MINUTES || 30);
+        const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+        await this.mfaTotpRepository.update(mfaTotp.id, {
+          activationPin: newPinHash,
+          activationPinExpiresAt: expiresAt,
+          pinVerified: false,
+        });
+
+        response.activationPin = newPin;
+        response.message = `La cuenta requiere activación. Su PIN de activación es: ${newPin}. Envíelo en el campo activationPin junto con sus credenciales.`;
+      } else if (mfaTotp.deliveryMode === "SMS") {
+        response.message = "La cuenta requiere activación. Se ha enviado un PIN de 6 dígitos a su teléfono. Envíelo en el campo activationPin.";
+      } else if (mfaTotp.deliveryMode === "EMAIL") {
+        response.message = "La cuenta requiere activación. Se ha enviado un PIN de 6 dígitos a su correo. Envíelo en el campo activationPin.";
+      }
+
+      return response;
+    }
+
+    // PASO 2: Viene PIN — verificar y activar
+
+    if (mfaTotp.pinVerified) {
+      await this.registerFailedLogin(identifier, "El PIN ya fue utilizado. Contacte soporte.");
+      throw new ForbiddenException("El PIN de activación ya fue utilizado.");
+    }
+
+    if (mfaTotp.activationPinExpiresAt && new Date() > mfaTotp.activationPinExpiresAt) {
+      await this.registerFailedLogin(identifier, "El PIN de activación ha expirado.");
+      throw new ForbiddenException("El PIN de activación ha expirado. Intente hacer login sin PIN para obtener uno nuevo.");
+    }
+
+    const pinHash = this.sha256(activationPin);
+    if (mfaTotp.activationPin !== pinHash) {
+      await this.registerFailedLogin(identifier, "PIN de activación incorrecto.");
+      throw new UnauthorizedException("PIN de activación incorrecto.");
+    }
+
+    // PIN correcto: activar la cuenta
+    await this.userRepository.update(user.id, {
+      accountStatus: "ACTIVE",
+      isActive: true,
+    });
+
+    // Marcar PIN como verificado
+    await this.mfaTotpRepository.update(mfaTotp.id, {
+      pinVerified: true,
+      challengeStatus: "VERIFIED",
+      verifiedAt: new Date(),
+      lastUsedAt: new Date(),
+    });
+
+    // Continuar con autenticación normal (usuario ya está activo)
+    const activatedUser = await this.userRepository.findOne({ where: { id: user.id } });
+    if (!activatedUser) {
+      throw new ForbiddenException("Error al activar la cuenta.");
+    }
+
+    // Crear sesión normalmente
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
+    const sessionCode = this.generateOpaqueToken("session");
+    const refreshToken = this.generateOpaqueToken("refresh");
+    const accessToken = this.generateOpaqueToken("access");
+
+    const sessionToken = new SessionToken();
+    Object.assign(sessionToken, {
+      name: `Sesión de ${identifier}`,
+      description: `Refresh token emitido para ${identifier}`,
+      createdBy: "login-service",
+      isActive: true,
+      userId: activatedUser.id,
+      subscriberId: "swagger",
+      sessionCode,
+      tokenId: this.sha256(refreshToken),
+      tokenType: "REFRESH_TOKEN",
+      issuedAt,
+      expiresAt,
+      revokedAt: undefined,
+      revocationReason: "",
+      logoutAt: undefined,
+      certificationStatus: "ISSUED",
+      authenticatedUserAcls: this.resolveUserAcls(activatedUser),
+      metadata: {
+        identifier,
+        accessTokenHash: this.sha256(accessToken),
+        activatedAt: issuedAt.toISOString(),
+      },
+    });
+
+    await this.sessionTokenRepository.save(sessionToken);
+
+    const login = this.loginRepository.create({
+      name: `Login ${identifier}`,
+      description: `Activación y autenticación satisfactoria para ${identifier}`,
+      createdBy: "login-service",
+      isActive: true,
+      correlationCode: this.generateOpaqueToken("login"),
+      userId: activatedUser.id,
+      loginIdentifier: identifier,
+      loginIdentifierType: this.resolveIdentifierType(activatedUser, identifier),
+      flowType: "PASSWORD",
+      authMethod: "LOCAL_PASSWORD",
+      providerCode: "LOCAL",
+      subscriberId: "swagger",
+      sessionCode,
+      authStatus: "SUCCEEDED",
+      failureReason: "",
+      ipAddress: "",
+      deviceFingerprint: "",
+      userAgent: "",
+      accessTokenIssued: true,
+      refreshTokenIssued: true,
+      pkceRequired: false,
+      authenticatedUserAcls: this.resolveUserAcls(activatedUser),
+      occurredAt: issuedAt,
+      metadata: {
+        refreshTokenId: sessionToken.tokenId,
+        accessTokenHash: this.sha256(accessToken),
+        activatedByPin: true,
+      },
+    });
+
+    const persistedLogin = await this.loginRepository.save(login);
+
+    await this.userRepository.update(activatedUser.id, {
+      lastLoginAt: issuedAt,
+    });
+
+    await this.publishDomainEvent(
+      LoginSucceededEvent.create(
+        String(persistedLogin.id),
+        persistedLogin,
+        String(persistedLogin.createdBy || "login-service"),
+        String(persistedLogin.correlationCode || persistedLogin.id),
+      ),
+    );
+
+    return this.buildLoginResponse(persistedLogin, {
+      accessToken,
+      refreshToken,
+      sessionCode,
+      userId: activatedUser.id,
+      expiresAt,
+      message: "Cuenta activada y autenticación completada correctamente.",
+    });
   }
 }

@@ -42,7 +42,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
-import { UserCommandService } from "../services/usercommand.service";
+import { UserService } from "../services/user.service";
 import { UserAuthGuard } from "../guards/userauthguard.guard";
 
 import { DeleteResult } from "typeorm";
@@ -50,7 +50,7 @@ import { Logger } from "@nestjs/common";
 import { Helper } from "src/common/helpers/helpers";
 import { User } from "../entities/user.entity";
 import { UserResponse, UsersResponse } from "../types/user.types";
-import { CreateUserDto, UpdateUserDto } from "../dtos/all-dto"; 
+import { CreateUserMinimalDto, UpdateUserMinimalDto } from "../dtos/all-dto"; 
 
 //Loggers
 import { LoggerClient } from "src/common/logger/logger.client";
@@ -58,11 +58,6 @@ import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { logger } from '@core/logs/logger';
 
 import { BadRequestException } from "@nestjs/common";
-
-import { CommandBus } from "@nestjs/cqrs";
-//import { UserCreatedEvent } from "../events/usercreated.event";
-import { EventStoreService } from "../shared/event-store/event-store.service";
-import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 
 @ApiTags("User Command")
 @UseGuards(UserAuthGuard)
@@ -75,16 +70,13 @@ export class UserCommandController {
 
   //Constructor del controlador: UserCommandController
   constructor(
-  private readonly service: UserCommandService,
-  private readonly commandBus: CommandBus,
-  private readonly eventStore: EventStoreService,
-  private readonly eventPublisher: KafkaEventPublisher
+  private readonly service: UserService,
   ) {
     //Coloca aquí la lógica que consideres necesaria para inicializar el controlador
   }
 
-  @ApiOperation({ summary: "Create a new user" })
-  @ApiBody({ type: CreateUserDto })
+  @ApiOperation({ summary: "Crear un usuario con los datos mínimos de la historia de usuario" })
+  @ApiBody({ type: CreateUserMinimalDto })
   @ApiResponse({ status: 201, type: UserResponse<User> })
   @Post()
   @LogExecutionTime({
@@ -106,7 +98,7 @@ export class UserCommandController {
       .get(UserCommandController.name),
   })
   async create(
-    @Body() createUserDtoInput: CreateUserDto
+    @Body() createUserDtoInput: CreateUserMinimalDto
   ): Promise<UserResponse<User>> {
     try {
       logger.info("Receiving in controller:", createUserDtoInput);
@@ -130,8 +122,8 @@ export class UserCommandController {
 
   
   
-  @ApiOperation({ summary: "Create multiple users" })
-  @ApiBody({ type: [CreateUserDto] })
+  @ApiOperation({ summary: "Crear múltiples usuarios con payload mínimo" })
+  @ApiBody({ type: [CreateUserMinimalDto] })
   @ApiResponse({ status: 201, type: UsersResponse<User> })
   @Post("bulk")
   @LogExecutionTime({
@@ -153,7 +145,7 @@ export class UserCommandController {
       .get(UserCommandController.name),
   })
   async bulkCreate(
-    @Body() createUserDtosInput: CreateUserDto[]
+    @Body() createUserDtosInput: CreateUserMinimalDto[]
   ): Promise<UsersResponse<User>> {
     try {
       const entities = await this.service.bulkCreate(createUserDtosInput);
@@ -171,14 +163,14 @@ export class UserCommandController {
 
   
   
-  @ApiOperation({ summary: "Update an user" })
+  @ApiOperation({ summary: "Actualizar un usuario" })
   @ApiParam({
     name: "id",
     description: "Identificador desde la url del endpoint",
   }) // ✅ Documentamos el ID de la URL
   @ApiBody({
-    type: UpdateUserDto,
-    description: "El Payload debe incluir el mismo ID de la URL",
+    type: UpdateUserMinimalDto,
+    description: "Payload parcial del usuario. El ID del body es opcional si ya viene en la URL.",
   })
   @ApiResponse({ status: 200, type: UserResponse<User> })
   @ApiResponse({
@@ -213,7 +205,7 @@ export class UserCommandController {
       // Permitir body plano o anidado en 'data'
       const partialEntity = body?.data ? body.data : body;
       // ✅ Validación de coincidencia de IDs
-      if (id !== partialEntity.id) {
+      if (partialEntity.id && id !== partialEntity.id) {
         throw new BadRequestException(
           "El ID en la URL no coincide con el ID en la instancia de User a actualizar."
         );
@@ -233,8 +225,8 @@ export class UserCommandController {
 
   
   
-  @ApiOperation({ summary: "Update multiple users" })
-  @ApiBody({ type: [UpdateUserDto] })
+  @ApiOperation({ summary: "Actualizar múltiples usuarios" })
+  @ApiBody({ type: [UpdateUserMinimalDto] })
   @ApiResponse({ status: 200, type: UsersResponse<User> })
   @Put("bulk")
   @LogExecutionTime({
@@ -256,7 +248,7 @@ export class UserCommandController {
       .get(UserCommandController.name),
   })
   async bulkUpdate(
-    @Body() partialEntities: UpdateUserDto[]
+    @Body() partialEntities: UpdateUserMinimalDto[]
   ): Promise<UsersResponse<User>> {
     try {
       const entities = await this.service.bulkUpdate(partialEntities);
@@ -319,7 +311,7 @@ export class UserCommandController {
 
   
   
-  @ApiOperation({ summary: "Delete multiple users" })
+  @ApiOperation({ summary: "Eliminar múltiples usuarios" })
   @ApiResponse({ status: 200, type: DeleteResult })
   @Delete("bulk")
   @LogExecutionTime({
@@ -341,7 +333,8 @@ export class UserCommandController {
       .get(UserCommandController.name),
   })
   async bulkDelete(@Query("ids") ids: string[]): Promise<DeleteResult> {
-    return await this.service.bulkDelete(ids);
+    const deleted = await this.service.bulkDelete(ids);
+    return { raw: [], affected: deleted } as DeleteResult;
   }
 }
 

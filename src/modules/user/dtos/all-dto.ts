@@ -30,10 +30,12 @@
 
 import { InputType, Field, Float, Int, ObjectType } from '@nestjs/graphql';
 import GraphQLJSON from 'graphql-type-json';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsEmail,
   IsDate,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -41,6 +43,7 @@ import {
   IsString,
   IsObject,
   IsUUID,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 
@@ -59,6 +62,17 @@ export class BaseUserDto {
   @IsNotEmpty()
   @Field(() => String, { nullable: false })
   name: string = '';
+
+  @ApiProperty({
+    type: () => String,
+    description: 'Descripción de la instancia User.',
+    example: 'Descripción funcional del usuario',
+    nullable: false,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  description: string = 'Sin descripción';
 
   // Propiedades predeterminadas de la clase CreateUserDto según especificación del sistema
 
@@ -498,6 +512,331 @@ export class UpdateUserDto extends BaseUserDto {
     return instance;
   }
 } 
+
+
+@InputType()
+export class CreateUserMinimalDto {
+  @ApiProperty({
+    type: () => String,
+    description: 'Nombre de usuario requerido por la historia de usuario.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  username!: string;
+
+  @ApiProperty({
+    type: () => String,
+    description: 'Correo principal del usuario.',
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  email!: string;
+
+  @ApiProperty({
+    type: () => String,
+    description: 'Teléfono principal del usuario.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  phone!: string;
+
+  @ApiProperty({
+    type: () => String,
+    description: 'Contraseña en texto plano. El backend la persistirá como passwordHash.',
+  })
+  @IsString()
+  @MinLength(8)
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  password!: string;
+
+  @ApiProperty({
+    type: () => Boolean,
+    description: 'Aceptación explícita de términos y condiciones.',
+  })
+  @IsBoolean()
+  @Field(() => Boolean, { nullable: false })
+  termsAccepted!: boolean;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Nombre visible del usuario. Si se omite se usa username.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  name?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Descripción funcional del usuario.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  description?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Usuario creador de la instancia.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  createdBy?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Referencia al usuario que lo refirió.',
+  })
+  @IsUUID()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  referralId?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Identificador principal del microservicio.',
+    enum: ['EMAIL', 'USERNAME', 'PHONE'],
+    default: 'EMAIL',
+  })
+  @IsString()
+  @IsOptional()
+  @IsIn(['EMAIL', 'USERNAME', 'PHONE'])
+  @Field(() => String, { nullable: true, defaultValue: 'EMAIL' })
+  identifierType?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Estado de cuenta inicial. Si se omite queda pendiente de verificación.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  accountStatus?: string;
+
+  @ApiPropertyOptional({
+    type: () => Boolean,
+    description: 'Estado operativo de la instancia.',
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    type: () => Object,
+    description: 'Metadatos adicionales del usuario.',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => GraphQLJSON, { nullable: true })
+  metadata?: Record<string, any>;
+}
+
+
+@InputType()
+export class UpdateUserMinimalDto {
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Identificador del usuario. En actualización simple puede omitirse y usarse el de la URL.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  id?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Nombre visible del usuario.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  name?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Descripción funcional del usuario.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  description?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Nombre de usuario.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  username?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Correo principal.',
+  })
+  @IsEmail()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  email?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Teléfono principal.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Nueva contraseña en texto plano.',
+  })
+  @IsString()
+  @IsOptional()
+  @MinLength(8)
+  @Field(() => String, { nullable: true })
+  password?: string;
+
+  @ApiPropertyOptional({
+    type: () => Boolean,
+    description: 'Aceptación de términos y condiciones.',
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Field(() => Boolean, { nullable: true })
+  termsAccepted?: boolean;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Estado de cuenta del usuario.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  accountStatus?: string;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Tipo funcional del usuario. Si no se envía se mantiene el actual.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  userType?: string;
+
+  @ApiPropertyOptional({
+    type: () => Boolean,
+    description: 'Estado operativo del usuario.',
+  })
+  @IsBoolean()
+  @IsOptional()
+  @Field(() => Boolean, { nullable: true })
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    type: () => String,
+    description: 'Usuario creador o responsable del cambio.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  createdBy?: string;
+
+  @ApiPropertyOptional({
+    type: () => Object,
+    description: 'Metadatos adicionales a fusionar.',
+  })
+  @IsObject()
+  @IsOptional()
+  @Field(() => GraphQLJSON, { nullable: true })
+  metadata?: Record<string, any>;
+}
+
+
+export class UserListQueryDto {
+  @ApiPropertyOptional({ type: Number, default: 1 })
+  @IsOptional()
+  page?: number;
+
+  @ApiPropertyOptional({ type: Number, default: 25 })
+  @IsOptional()
+  size?: number;
+
+  @ApiPropertyOptional({ type: String, default: 'creationDate' })
+  @IsString()
+  @IsOptional()
+  sort?: string;
+
+  @ApiPropertyOptional({ type: String, enum: ['ASC', 'DESC', 'asc', 'desc'], default: 'DESC' })
+  @IsString()
+  @IsOptional()
+  order?: string;
+
+  @ApiPropertyOptional({ type: String, description: 'Búsqueda libre por username, email, phone o code.' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  id?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  username?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  identifierType?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  identifierValue?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  accountStatus?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @IsString()
+  @IsOptional()
+  userType?: string;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  termsAccepted?: boolean;
+}
 
 
 

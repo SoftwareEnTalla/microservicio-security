@@ -542,6 +542,17 @@ export class LoginAuthenticateWithPasswordDto {
   @Field(() => String, { description: 'Contraseña asociada a la cuenta', nullable: false })
   password!: string;
 
+  @ApiProperty({
+    type: () => String,
+    nullable: true,
+    required: false,
+    description: 'PIN de activación de 6 dígitos. Requerido en el primer login para cuentas PENDING_VERIFICATION.',
+  })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { description: 'PIN de activación de 6 dígitos', nullable: true })
+  activationPin?: string;
+
   constructor(partial: Partial<LoginAuthenticateWithPasswordDto> = {}) {
     Object.assign(this, partial);
   }

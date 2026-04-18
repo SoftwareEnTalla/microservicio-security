@@ -38,18 +38,16 @@ import {
   Logger,
   UseGuards,
 } from "@nestjs/common";
+import { UserService } from "../services/user.service";
 import { UserQueryService } from "../services/userquery.service";
-import { FindManyOptions } from "typeorm";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { UserResponse, UsersResponse } from "../types/user.types";
 import { LoggerClient } from "src/common/logger/logger.client";
 import { User } from "../entities/user.entity";
 import { UserAuthGuard } from "../guards/userauthguard.guard";
-import { PaginationArgs } from "src/common/dto/args/pagination.args";
-import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
-import { UserDto } from "../dtos/all-dto";
+import { UserListQueryDto } from "../dtos/all-dto";
 
 import { logger } from '@core/logs/logger';
 
@@ -61,19 +59,27 @@ import { logger } from '@core/logs/logger';
 export class UserQueryController {
   #logger = new Logger(UserQueryController.name);
 
-  constructor(private readonly service: UserQueryService) {}
+  constructor(private readonly service: UserService) {}
 
   @Get("list")
-  @ApiOperation({ summary: "Get all user with optional pagination" })
+  @ApiOperation({ summary: "Listar usuarios con filtros opcionales" })
   @ApiResponse({ status: 200, type: UsersResponse })
-  @ApiQuery({ name: "options", required: false, type: UserDto }) // Ajustar según el tipo real
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "size", required: false, type: Number })
   @ApiQuery({ name: "sort", required: false, type: String })
   @ApiQuery({ name: "order", required: false, type: String })
   @ApiQuery({ name: "search", required: false, type: String })
-  @ApiQuery({ name: "initDate", required: false, type: Date })
-  @ApiQuery({ name: "endDate", required: false, type: Date })
+  @ApiQuery({ name: "id", required: false, type: String })
+  @ApiQuery({ name: "code", required: false, type: String })
+  @ApiQuery({ name: "username", required: false, type: String })
+  @ApiQuery({ name: "email", required: false, type: String })
+  @ApiQuery({ name: "phone", required: false, type: String })
+  @ApiQuery({ name: "identifierType", required: false, type: String })
+  @ApiQuery({ name: "identifierValue", required: false, type: String })
+  @ApiQuery({ name: "accountStatus", required: false, type: String })
+  @ApiQuery({ name: "userType", required: false, type: String })
+  @ApiQuery({ name: "isActive", required: false, type: Boolean })
+  @ApiQuery({ name: "termsAccepted", required: false, type: Boolean })
   @LogExecutionTime({
     layer: "controller",
     callback: async (logData, client) => {
@@ -84,11 +90,10 @@ export class UserQueryController {
       .get(UserQueryService.name),
   })
   async findAll(
-    @Query("options") options?: FindManyOptions<User>    
+    @Query() filters?: UserListQueryDto
   ): Promise<UsersResponse<User>> {
     try {
-     
-      const users = await this.service.findAll(options);
+      const users = await this.service.findAll(filters);
       logger.info("Retrieving all user");
       return users;
     } catch (error) {
@@ -113,7 +118,7 @@ export class UserQueryController {
   })
   async findById(@Param("id") id: string): Promise<UserResponse<User>> {
     try {
-      const user = await this.service.findOne({ where: { id } });
+      const user = await this.service.findById(id);
       if (!user) {
         throw new NotFoundException(
           "User no encontrado para el id solicitado"
@@ -143,16 +148,11 @@ export class UserQueryController {
   async findByField(
     @Param("field") field: string, // Obtiene el campo de la ruta
     @Query("value") value: string, // Obtiene el valor de la consulta
-    @Query() paginationArgs?: PaginationArgs
+    @Query("page") page?: number,
+    @Query("size") size?: number,
   ): Promise<UsersResponse<User>> {
     try {
-      const entities = await this.service.findAndCount({
-        where: { [field]: value },
-        skip:
-          ((paginationArgs ? paginationArgs.page : 1) - 1) *
-          (paginationArgs ? paginationArgs.size : 25),
-        take: paginationArgs ? paginationArgs.size : 25,
-      });
+      const entities = await this.service.findByField(field, value, page, size);
 
       if (!entities) {
         throw new NotFoundException(
@@ -170,7 +170,6 @@ export class UserQueryController {
   @Get("pagination")
   @ApiOperation({ summary: "Find users with pagination" })
   @ApiResponse({ status: 200, type: UsersResponse<User> })
-  @ApiQuery({ name: "options", required: false, type: UserDto }) // Ajustar según el tipo real
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "size", required: false, type: Number })
   @ApiQuery({ name: "sort", required: false, type: String })
@@ -188,29 +187,10 @@ export class UserQueryController {
       .get(UserQueryService.name),
   })
   async findWithPagination(
-    @Query() options: FindManyOptions<User>,
-    @Query("page") page?: number,
-    @Query("size") size?: number,
-    @Query("sort") sort?: string,
-    @Query("order") order?: string,
-    @Query("search") search?: string,
-    @Query("initDate") initDate?: Date,
-    @Query("endDate") endDate?: Date
+    @Query() filters: UserListQueryDto,
   ): Promise<UsersResponse<User>> {
     try {
-     const paginationArgs: PaginationArgs = PaginationArgs.createPaginator(
-        page || 1,
-        size || 25,
-        sort || "createdAt", // Asigna valor por defecto
-        valueOfOrderBy(order || OrderBy.asc), // Asigna valor por defecto
-        search || "", // Asigna valor por defecto
-        initDate || undefined, // Puede ser undefined si no se proporciona
-        endDate || undefined // Puede ser undefined si no se proporciona
-      );
-      const entities = await this.service.findWithPagination(
-        options,
-        paginationArgs
-      );
+      const entities = await this.service.findAll(filters);
       if (!entities) {
         throw new NotFoundException("Entidades Users no encontradas.");
       }
@@ -259,28 +239,9 @@ export class UserQueryController {
   })
   async findAndCount(
     @Query() where: Record<string, any>={},
-    @Query("page") page?: number,
-    @Query("size") size?: number,
-    @Query("sort") sort?: string,
-    @Query("order") order?: string,
-    @Query("search") search?: string,
-    @Query("initDate") initDate?: Date,
-    @Query("endDate") endDate?: Date
   ): Promise<UsersResponse<User>> {
     try {
-      const paginationArgs: PaginationArgs = PaginationArgs.createPaginator(
-        page || 1,
-        size || 25,
-        sort || "createdAt", // Asigna valor por defecto
-        valueOfOrderBy(order || OrderBy.asc), // Asigna valor por defecto
-        search || "", // Asigna valor por defecto
-        initDate || undefined, // Puede ser undefined si no se proporciona
-        endDate || undefined // Puede ser undefined si no se proporciona
-      );
-      const entities = await this.service.findAndCount({
-        where: where,
-        paginationArgs: paginationArgs,
-      });
+      const entities = await this.service.findAndCount(where);
 
       if (!entities) {
         throw new NotFoundException(
@@ -311,9 +272,7 @@ export class UserQueryController {
     @Query() where: Record<string, any>={}
   ): Promise<UserResponse<User>> {
     try {
-      const entity = await this.service.findOne({
-        where: where,
-      });
+      const entity = await this.service.findOne(where);
 
       if (!entity) {
         throw new NotFoundException("Entidad User no encontrada.");
@@ -342,9 +301,7 @@ export class UserQueryController {
     @Query() where: Record<string, any>={}
   ): Promise<UserResponse<User> | Error> {
     try {
-      const entity = await this.service.findOne({
-        where: where,
-      });
+      const entity = await this.service.findOneOrFail(where);
 
       if (!entity) {
         return new NotFoundException("Entidad User no encontrada.");
