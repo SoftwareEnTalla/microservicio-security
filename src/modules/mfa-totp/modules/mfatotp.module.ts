@@ -61,6 +61,7 @@ import { MfaTotpLoggingInterceptor } from "../interceptors/mfatotp.logging.inter
 
 //Event-Sourcing dependencies
 import { EventStoreService } from "../shared/event-store/event-store.service";
+import { TotpService } from "../services/totp.service";
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     MfaTotpQueryService,
     MfaTotpCommandService,
+    TotpService,
   
     //Repositories
     MfaTotpCommandRepository,
@@ -115,6 +117,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     MfaTotpQueryService,
     MfaTotpCommandService,
+    TotpService,
   
     //Repositories
     MfaTotpCommandRepository,

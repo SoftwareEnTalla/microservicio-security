@@ -47,6 +47,11 @@ import {
   DeleteSessionTokenCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class SessionTokenCrudSaga {
   private readonly logger = new Logger(SessionTokenCrudSaga.name);
@@ -63,8 +68,9 @@ export class SessionTokenCrudSaga {
       ofType(SessionTokenCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de SessionToken: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleSessionTokenCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class SessionTokenCrudSaga {
       ofType(SessionTokenUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de SessionToken: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleSessionTokenUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class SessionTokenCrudSaga {
       ofType(SessionTokenDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de SessionToken: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleSessionTokenDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class SessionTokenCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SessionTokenCrudSaga.name)
+      .get(SessionTokenCrudSaga.name),
+  })
+  private async handleSessionTokenCreated(event: SessionTokenCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SessionToken Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SessionTokenCrudSaga.name)
+      .get(SessionTokenCrudSaga.name),
+  })
+  private async handleSessionTokenUpdated(event: SessionTokenUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SessionToken Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SessionTokenCrudSaga.name)
+      .get(SessionTokenCrudSaga.name),
+  })
+  private async handleSessionTokenDeleted(event: SessionTokenDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SessionToken Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

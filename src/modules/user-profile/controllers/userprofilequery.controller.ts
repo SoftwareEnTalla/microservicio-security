@@ -113,7 +113,7 @@ export class UserProfileQueryController {
   })
   async findById(@Param("id") id: string): Promise<UserProfileResponse<UserProfile>> {
     try {
-      const userprofile = await this.service.findOne({ where: { id } });
+      const userprofile = await this.service.findOne({ id });
       if (!userprofile) {
         throw new NotFoundException(
           "UserProfile no encontrado para el id solicitado"

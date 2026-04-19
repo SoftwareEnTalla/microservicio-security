@@ -43,6 +43,10 @@ import { RbacAclAuthGuard } from "../guards/rbacaclauthguard.guard";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { RbacAcl } from "../entities/rbac-acl.entity";
 import { BaseEntity } from "../entities/base.entity";
+import { Role } from "../entities/role.entity";
+import { Permission } from "../entities/permission.entity";
+import { RolePermission } from "../entities/role-permission.entity";
+import { UserRoleAssignment } from "../entities/user-role-assignment.entity";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -62,11 +66,17 @@ import { RbacAclLoggingInterceptor } from "../interceptors/rbacacl.logging.inter
 //Event-Sourcing dependencies
 import { EventStoreService } from "../shared/event-store/event-store.service";
 
+// RBAC v2 services
+import { RoleCommandService } from "../services/role-command.service";
+import { PermissionCommandService } from "../services/permission-command.service";
+import { RbacAssignmentService } from "../services/rbac-assignment.service";
+import { AclResolverService } from "../services/acl-resolver.service";
+
 @Module({
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, RbacAcl]), // Incluir BaseEntity para herencia
+    TypeOrmModule.forFeature([BaseEntity, RbacAcl, Role, Permission, RolePermission, UserRoleAssignment]),
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [RbacAclCommandController, RbacAclQueryController],
@@ -75,6 +85,11 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     RbacAclQueryService,
     RbacAclCommandService,
+    // RBAC v2 services
+    RoleCommandService,
+    PermissionCommandService,
+    RbacAssignmentService,
+    AclResolverService,
   
     //Repositories
     RbacAclCommandRepository,
@@ -115,6 +130,11 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     RbacAclQueryService,
     RbacAclCommandService,
+    // RBAC v2 services
+    RoleCommandService,
+    PermissionCommandService,
+    RbacAssignmentService,
+    AclResolverService,
   
     //Repositories
     RbacAclCommandRepository,

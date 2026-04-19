@@ -1,0 +1,448 @@
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════
+# Test E2E — Flujo completo del microservicio Security
+# ═══════════════════════════════════════════════════════════════
+# Requisitos:
+#   - security-service corriendo en http://localhost:3015
+#   - PostgreSQL + base de datos security-service disponible
+#   - curl y jq instalados
+#
+# Uso: bash security-service/src/docs/e2e-test.sh
+# ═══════════════════════════════════════════════════════════════
+
+set -uo pipefail
+
+BASE_URL="http://localhost:3015/api"
+AUTH="Bearer valid-token"
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'; BLUE='\033[0;34m'
+PASS=0; FAIL=0; TOTAL=0
+
+# ── Utilidades ──────────────────────────────────────────────
+log_step()  { echo -e "\n${BLUE}═══ PASO $1: $2 ═══${NC}"; }
+log_ok()    { echo -e "  ${GREEN}✔ $1${NC}"; PASS=$((PASS + 1)); TOTAL=$((TOTAL + 1)); }
+log_fail()  { echo -e "  ${RED}✘ $1${NC}"; FAIL=$((FAIL + 1)); TOTAL=$((TOTAL + 1)); }
+log_info()  { echo -e "  ${YELLOW}ℹ $1${NC}"; }
+
+assert_ok() {
+  local label="$1" http_code="$2"
+  if [[ "$http_code" =~ ^(200|201)$ ]]; then log_ok "$label (HTTP $http_code)";
+  else log_fail "$label — esperado 200/201, recibido $http_code"; fi
+}
+assert_field() {
+  local label="$1" value="$2"
+  if [[ -n "$value" && "$value" != "null" ]]; then log_ok "$label = $value";
+  else log_fail "$label está vacío o null"; fi
+}
+assert_contains() {
+  local label="$1" haystack="$2" needle="$3"
+  if echo "$haystack" | grep -q "$needle"; then log_ok "$label contiene '$needle'";
+  else log_fail "$label NO contiene '$needle'"; fi
+}
+
+do_post() {
+  local url="$1" data="$2" auth="${3:-$AUTH}"
+  curl -s -w "\n%{http_code}" -X POST "$url" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $auth" \
+    -d "$data" 2>/dev/null
+}
+do_put() {
+  local url="$1" data="$2" auth="${3:-$AUTH}"
+  curl -s -w "\n%{http_code}" -X PUT "$url" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $auth" \
+    -d "$data" 2>/dev/null
+}
+do_get() {
+  local url="$1" auth="${2:-$AUTH}"
+  curl -s -w "\n%{http_code}" -X GET "$url" \
+    -H "Authorization: $auth" 2>/dev/null
+}
+do_delete() {
+  local url="$1" auth="${2:-$AUTH}"
+  curl -s -w "\n%{http_code}" -X DELETE "$url" \
+    -H "Authorization: $auth" 2>/dev/null
+}
+
+extract_body() { echo "$1" | sed '$d'; }
+extract_code() { echo "$1" | tail -1; }
+
+NOW=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+UNIQUE=$(date +%s)
+TEST_EMAIL="e2e_${UNIQUE}@test.com"
+TEST_USER="e2e_user_${UNIQUE}"
+TEST_PHONE="+5353${UNIQUE: -6}"
+OLD_PWD="OldSecurePass123"
+NEW_PWD="NewSecurePass456"
+
+echo -e "${BLUE}╔═══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║  TEST E2E — Security Microservice Full Flow              ║${NC}"
+echo -e "${BLUE}╚═══════════════════════════════════════════════════════════╝${NC}"
+echo -e "  Base URL: $BASE_URL"
+echo -e "  Email:    $TEST_EMAIL"
+echo -e "  User:     $TEST_USER"
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 1: Crear usuario
+# ═══════════════════════════════════════════════════════════════
+log_step 1 "Crear usuario"
+
+RESP=$(do_post "$BASE_URL/users/command" "{
+  \"username\": \"$TEST_USER\",
+  \"email\": \"$TEST_EMAIL\",
+  \"phone\": \"$TEST_PHONE\",
+  \"password\": \"$OLD_PWD\",
+  \"termsAccepted\": true,
+  \"name\": \"E2E Test User\"
+}")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Crear usuario" "$HTTP"
+
+USER_ID=$(echo "$BODY" | jq -r '.data.id // empty')
+ACTIVATION_PIN=$(echo "$BODY" | jq -r '.activationPin // empty')
+assert_field "User ID" "$USER_ID"
+log_info "User ID: $USER_ID"
+if [[ -n "$ACTIVATION_PIN" ]]; then
+  log_info "Activation PIN: $ACTIVATION_PIN"
+else
+  log_info "No se devolvió PIN (modo no LOCAL). Se intentará sin PIN."
+  ACTIVATION_PIN=""
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 2: Activar usuario (primer login con PIN)
+# ═══════════════════════════════════════════════════════════════
+log_step 2 "Activar usuario con PIN (primer login)"
+
+if [[ -n "$ACTIVATION_PIN" ]]; then
+  RESP=$(do_post "$BASE_URL/logins/command" "{
+    \"identifier\": \"$TEST_EMAIL\",
+    \"password\": \"$OLD_PWD\",
+    \"activationPin\": \"$ACTIVATION_PIN\"
+  }" "")
+else
+  # Primer intento sin PIN para obtener el PIN si es modo LOCAL
+  RESP=$(do_post "$BASE_URL/logins/command" "{
+    \"identifier\": \"$TEST_EMAIL\",
+    \"password\": \"$OLD_PWD\"
+  }" "")
+  BODY=$(extract_body "$RESP")
+  ACTIVATION_PIN=$(echo "$BODY" | jq -r '.activationPin // empty')
+  if [[ -n "$ACTIVATION_PIN" ]]; then
+    log_info "PIN obtenido del primer login: $ACTIVATION_PIN"
+    RESP=$(do_post "$BASE_URL/logins/command" "{
+      \"identifier\": \"$TEST_EMAIL\",
+      \"password\": \"$OLD_PWD\",
+      \"activationPin\": \"$ACTIVATION_PIN\"
+    }" "")
+  fi
+fi
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Activar y autenticar" "$HTTP"
+
+ACCESS_TOKEN=$(echo "$BODY" | jq -r '.accessToken // empty')
+REFRESH_TOKEN=$(echo "$BODY" | jq -r '.refreshToken // empty')
+SESSION_CODE=$(echo "$BODY" | jq -r '.sessionCode // empty')
+AUTH_STATUS=$(echo "$BODY" | jq -r '.data.authStatus // empty')
+
+if [[ -n "$ACCESS_TOKEN" && "$ACCESS_TOKEN" != "null" ]]; then
+  log_ok "Access token obtenido"
+  log_info "Token: ${ACCESS_TOKEN:0:40}..."
+  AUTH_REAL="Bearer $ACCESS_TOKEN"
+else
+  log_info "No se devolvió accessToken; usando Bearer valid-token"
+  AUTH_REAL="$AUTH"
+fi
+if [[ -n "$REFRESH_TOKEN" && "$REFRESH_TOKEN" != "null" ]]; then
+  log_ok "Refresh token obtenido"
+fi
+log_info "Auth status: $AUTH_STATUS"
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 3: Login normal con usuario y contraseña
+# ═══════════════════════════════════════════════════════════════
+log_step 3 "Login normal con usuario y contraseña"
+
+RESP=$(do_post "$BASE_URL/logins/command" "{
+  \"identifier\": \"$TEST_EMAIL\",
+  \"password\": \"$OLD_PWD\"
+}" "")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Login normal" "$HTTP"
+
+ACCESS_TOKEN2=$(echo "$BODY" | jq -r '.accessToken // empty')
+REFRESH_TOKEN2=$(echo "$BODY" | jq -r '.refreshToken // empty')
+SESSION_CODE2=$(echo "$BODY" | jq -r '.sessionCode // empty')
+
+if [[ -n "$ACCESS_TOKEN2" && "$ACCESS_TOKEN2" != "null" ]]; then
+  AUTH_REAL="Bearer $ACCESS_TOKEN2"
+  log_ok "Nuevo access token obtenido"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 4: Actualizar datos del usuario
+# ═══════════════════════════════════════════════════════════════
+log_step 4 "Actualizar datos del usuario"
+
+RESP=$(do_put "$BASE_URL/users/command/$USER_ID" "{
+  \"id\": \"$USER_ID\",
+  \"name\": \"E2E User Updated\",
+  \"description\": \"Descripción actualizada desde test E2E\"
+}" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Actualizar datos" "$HTTP"
+
+UPDATED_NAME=$(echo "$BODY" | jq -r '.data.name // empty')
+assert_field "Nombre actualizado" "$UPDATED_NAME"
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 5: Crear perfil de usuario
+# ═══════════════════════════════════════════════════════════════
+log_step 5 "Crear perfil de usuario"
+
+RESP=$(do_post "$BASE_URL/userprofiles/command" "{
+  \"name\": \"Perfil de $TEST_USER\",
+  \"userId\": \"$USER_ID\",
+  \"firstName\": \"E2E\",
+  \"lastName\": \"TestUser\",
+  \"language\": \"es\",
+  \"country\": \"CU\",
+  \"city\": \"La Habana\",
+  \"address\": \"Calle Test #123\",
+  \"createdBy\": \"e2e-test\",
+  \"creationDate\": \"$NOW\",
+  \"modificationDate\": \"$NOW\",
+  \"isActive\": true
+}" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Crear perfil" "$HTTP"
+
+PROFILE_ID=$(echo "$BODY" | jq -r '.data.id // empty')
+assert_field "Profile ID" "$PROFILE_ID"
+log_info "Profile ID: $PROFILE_ID"
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 6: Modificar perfil de usuario
+# ═══════════════════════════════════════════════════════════════
+log_step 6 "Modificar perfil de usuario"
+
+if [[ -n "$PROFILE_ID" && "$PROFILE_ID" != "null" ]]; then
+  RESP=$(do_put "$BASE_URL/userprofiles/command/$PROFILE_ID" "{
+    \"id\": \"$PROFILE_ID\",
+    \"firstName\": \"E2E Updated\",
+    \"lastName\": \"TestUser Modified\",
+    \"city\": \"Santiago de Cuba\",
+    \"address\": \"Calle Actualizada #456\",
+    \"name\": \"Perfil de $TEST_USER\",
+    \"userId\": \"$USER_ID\",
+    \"createdBy\": \"e2e-test\",
+    \"creationDate\": \"$NOW\",
+    \"modificationDate\": \"$NOW\",
+    \"isActive\": true
+  }" "$AUTH")
+  BODY=$(extract_body "$RESP")
+  HTTP=$(extract_code "$RESP")
+  assert_ok "Modificar perfil" "$HTTP"
+else
+  log_fail "No se pudo modificar perfil (ID inválido)"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 7: Cambiar contraseña (actualización del campo password del usuario)
+# ═══════════════════════════════════════════════════════════════
+log_step 7 "Cambiar contraseña del usuario"
+
+RESP=$(do_put "$BASE_URL/users/command/$USER_ID" "{
+  \"id\": \"$USER_ID\",
+  \"password\": \"$NEW_PWD\"
+}" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Cambiar contraseña" "$HTTP"
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 8: Crear rol MERCHANT (via RBAC ACL)
+# ═══════════════════════════════════════════════════════════════
+log_step 8 "Crear rol MERCHANT con 3 permisos"
+
+# Crear ACL 1: MERCHANT + products:read
+RESP=$(do_post "$BASE_URL/rbacacls/command" "{
+  \"name\": \"MERCHANT-products-read\",
+  \"roleCode\": \"MERCHANT\",
+  \"roleName\": \"Merchant\",
+  \"permissionCode\": \"products:read\",
+  \"resource\": \"products\",
+  \"action\": \"read\",
+  \"scope\": \"own\",
+  \"effect\": \"ALLOW\",
+  \"userId\": \"$USER_ID\",
+  \"assignedAt\": \"$NOW\",
+  \"createdBy\": \"e2e-test\",
+  \"creationDate\": \"$NOW\",
+  \"modificationDate\": \"$NOW\",
+  \"isActive\": true
+}" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Crear ACL MERCHANT + products:read" "$HTTP"
+ACL1_ID=$(echo "$BODY" | jq -r '.data.id // empty')
+
+# Crear ACL 2: MERCHANT + invoices:create
+RESP=$(do_post "$BASE_URL/rbacacls/command" "{
+  \"name\": \"MERCHANT-invoices-create\",
+  \"roleCode\": \"MERCHANT\",
+  \"roleName\": \"Merchant\",
+  \"permissionCode\": \"invoices:create\",
+  \"resource\": \"invoices\",
+  \"action\": \"create\",
+  \"scope\": \"own\",
+  \"effect\": \"ALLOW\",
+  \"userId\": \"$USER_ID\",
+  \"assignedAt\": \"$NOW\",
+  \"createdBy\": \"e2e-test\",
+  \"creationDate\": \"$NOW\",
+  \"modificationDate\": \"$NOW\",
+  \"isActive\": true
+}" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Crear ACL MERCHANT + invoices:create" "$HTTP"
+ACL2_ID=$(echo "$BODY" | jq -r '.data.id // empty')
+
+# Crear ACL 3: MERCHANT + orders:manage
+RESP=$(do_post "$BASE_URL/rbacacls/command" "{
+  \"name\": \"MERCHANT-orders-manage\",
+  \"roleCode\": \"MERCHANT\",
+  \"roleName\": \"Merchant\",
+  \"permissionCode\": \"orders:manage\",
+  \"resource\": \"orders\",
+  \"action\": \"manage\",
+  \"scope\": \"all\",
+  \"effect\": \"ALLOW\",
+  \"userId\": \"$USER_ID\",
+  \"assignedAt\": \"$NOW\",
+  \"createdBy\": \"e2e-test\",
+  \"creationDate\": \"$NOW\",
+  \"modificationDate\": \"$NOW\",
+  \"isActive\": true
+}" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Crear ACL MERCHANT + orders:manage" "$HTTP"
+ACL3_ID=$(echo "$BODY" | jq -r '.data.id // empty')
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 9: Logout
+# ═══════════════════════════════════════════════════════════════
+log_step 9 "Logout del usuario"
+
+LOGOUT_PAYLOAD="{}"
+if [[ -n "$SESSION_CODE2" && "$SESSION_CODE2" != "null" ]]; then
+  LOGOUT_PAYLOAD="{\"sessionCode\": \"$SESSION_CODE2\"}"
+elif [[ -n "$REFRESH_TOKEN2" && "$REFRESH_TOKEN2" != "null" ]]; then
+  LOGOUT_PAYLOAD="{\"refreshToken\": \"$REFRESH_TOKEN2\"}"
+fi
+
+RESP=$(do_post "$BASE_URL/logins/command/logout" "$LOGOUT_PAYLOAD" "$AUTH")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Logout" "$HTTP"
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 10: Login con contraseña vieja (debe fallar)
+# ═══════════════════════════════════════════════════════════════
+log_step 10 "Login con contraseña VIEJA (debe fallar)"
+
+RESP=$(do_post "$BASE_URL/logins/command" "{
+  \"identifier\": \"$TEST_EMAIL\",
+  \"password\": \"$OLD_PWD\"
+}" "")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+
+OLD_STATUS=$(echo "$BODY" | jq -r '.data.authStatus // empty')
+OLD_MESSAGE=$(echo "$BODY" | jq -r '.message // empty')
+
+if [[ "$OLD_MESSAGE" == *"inválidas"* || "$OLD_STATUS" == "FAILED" || "$HTTP" =~ ^(400|401|403|500)$ ]]; then
+  log_ok "Login con contraseña vieja RECHAZADO correctamente (HTTP $HTTP, msg=$OLD_MESSAGE)"
+else
+  log_fail "Login con contraseña vieja debería fallar pero obtuvo HTTP $HTTP, status=$OLD_STATUS"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 11: Login con contraseña nueva (debe funcionar)
+# ═══════════════════════════════════════════════════════════════
+log_step 11 "Login con contraseña NUEVA (debe funcionar)"
+
+RESP=$(do_post "$BASE_URL/logins/command" "{
+  \"identifier\": \"$TEST_EMAIL\",
+  \"password\": \"$NEW_PWD\"
+}" "")
+BODY=$(extract_body "$RESP")
+HTTP=$(extract_code "$RESP")
+assert_ok "Login con contraseña nueva" "$HTTP"
+
+NEW_STATUS=$(echo "$BODY" | jq -r '.data.authStatus // empty')
+NEW_TOKEN=$(echo "$BODY" | jq -r '.accessToken // empty')
+if [[ "$NEW_STATUS" == "SUCCEEDED" ]]; then
+  log_ok "Auth status = SUCCEEDED"
+elif [[ -n "$NEW_TOKEN" && "$NEW_TOKEN" != "null" ]]; then
+  log_ok "Token obtenido con nueva contraseña"
+else
+  log_info "Auth status: $NEW_STATUS (puede ser válido según el flujo)"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 12: Eliminar registros de ACL
+# ═══════════════════════════════════════════════════════════════
+log_step 12 "Limpiar ACLs creados"
+
+for ACL_ID in "$ACL1_ID" "$ACL2_ID" "$ACL3_ID"; do
+  if [[ -n "$ACL_ID" && "$ACL_ID" != "null" ]]; then
+    RESP=$(do_delete "$BASE_URL/rbacacls/command/$ACL_ID" "$AUTH")
+    HTTP=$(extract_code "$RESP")
+    assert_ok "Eliminar ACL $ACL_ID" "$HTTP"
+  fi
+done
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 13: Eliminar perfil
+# ═══════════════════════════════════════════════════════════════
+log_step 13 "Eliminar perfil del usuario"
+
+if [[ -n "$PROFILE_ID" && "$PROFILE_ID" != "null" ]]; then
+  RESP=$(do_delete "$BASE_URL/userprofiles/command/$PROFILE_ID" "$AUTH")
+  HTTP=$(extract_code "$RESP")
+  assert_ok "Eliminar perfil" "$HTTP"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# PASO 14: Eliminar usuario
+# ═══════════════════════════════════════════════════════════════
+log_step 14 "Eliminar usuario"
+
+RESP=$(do_delete "$BASE_URL/users/command/$USER_ID" "$AUTH")
+HTTP=$(extract_code "$RESP")
+assert_ok "Eliminar usuario" "$HTTP"
+
+# ═══════════════════════════════════════════════════════════════
+# Resumen
+# ═══════════════════════════════════════════════════════════════
+echo ""
+echo -e "${BLUE}╔═══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║  RESUMEN DEL TEST E2E                                    ║${NC}"
+echo -e "${BLUE}╠═══════════════════════════════════════════════════════════╣${NC}"
+echo -e "${BLUE}║${NC}  Total:  $TOTAL                                            ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}  ${GREEN}✔ OK:    $PASS${NC}                                            ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}  ${RED}✘ FAIL:  $FAIL${NC}                                            ${BLUE}║${NC}"
+echo -e "${BLUE}╚═══════════════════════════════════════════════════════════╝${NC}"
+
+if [[ $FAIL -gt 0 ]]; then
+  exit 1
+fi
+exit 0

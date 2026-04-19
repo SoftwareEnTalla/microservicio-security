@@ -43,6 +43,9 @@ import { SalesManagerAuthGuard } from "../guards/salesmanagerauthguard.guard";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { SalesManager } from "../entities/sales-manager.entity";
 import { BaseEntity } from "../entities/base.entity";
+import { User } from "../../user/entities/user.entity";
+import { BaseEntity as UserBaseEntity } from "../../user/entities/base.entity";
+import { SalesManagerReferralService } from "../services/sales-manager-referral.service";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -67,7 +70,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, SalesManager]), // Incluir BaseEntity para herencia
+    TypeOrmModule.forFeature([BaseEntity, SalesManager, UserBaseEntity, User]), // Incluir BaseEntity para herencia
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [SalesManagerCommandController, SalesManagerQueryController],
@@ -76,6 +79,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SalesManagerQueryService,
     SalesManagerCommandService,
+    SalesManagerReferralService,
   
     //Repositories
     SalesManagerCommandRepository,
@@ -117,6 +121,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SalesManagerQueryService,
     SalesManagerCommandService,
+    SalesManagerReferralService,
   
     //Repositories
     SalesManagerCommandRepository,

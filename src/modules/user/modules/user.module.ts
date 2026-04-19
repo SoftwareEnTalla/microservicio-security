@@ -35,6 +35,8 @@ import { UserQueryController } from "../controllers/userquery.controller";
 import { UserCommandService } from "../services/usercommand.service";
 import { UserQueryService } from "../services/userquery.service";
 import { UserService } from "../services/user.service";
+import { SuperAdminBootstrapService } from "../services/super-admin-bootstrap.service";
+import { PasswordPolicyService } from "../../../common/services/password-policy.service";
 
 import { UserCommandRepository } from "../repositories/usercommand.repository";
 import { UserQueryRepository } from "../repositories/userquery.repository";
@@ -46,6 +48,10 @@ import { User } from "../entities/user.entity";
 import { BaseEntity } from "../entities/base.entity";
 import { MfaTotp } from "../../mfa-totp/entities/mfa-totp.entity";
 import { BaseEntity as MfaTotpBaseEntity } from "../../mfa-totp/entities/base.entity";
+import { SystemAdminPolicy } from "../../system-admin-policy/entities/system-admin-policy.entity";
+import { BaseEntity as SystemAdminPolicyBaseEntity } from "../../system-admin-policy/entities/base.entity";
+import { AdminActionAuditService } from "../../system-admin-policy/services/admin-action-audit.service";
+import { SystemAdminGuard } from "../../system-admin-policy/guards/system-admin.guard";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -69,7 +75,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, User, MfaTotpBaseEntity, MfaTotp]), // Incluir BaseEntity para herencia
+    TypeOrmModule.forFeature([BaseEntity, User, MfaTotpBaseEntity, MfaTotp, SystemAdminPolicyBaseEntity, SystemAdminPolicy]), // Incluir BaseEntity para herencia
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [UserCommandController, UserQueryController],
@@ -77,8 +83,11 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     //Services
     EventStoreService,
     UserService,
+    SuperAdminBootstrapService,
+    PasswordPolicyService,
     UserQueryService,
     UserCommandService,
+    AdminActionAuditService,
   
     //Repositories
     UserCommandRepository,
@@ -88,6 +97,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     UserResolver,
     //Guards
     UserAuthGuard,
+    SystemAdminGuard,
     //Interceptors
     UserInterceptor,
     UserLoggingInterceptor,
@@ -118,6 +128,8 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     //Services
     EventStoreService,
     UserService,
+    SuperAdminBootstrapService,
+    PasswordPolicyService,
     UserQueryService,
     UserCommandService,
   

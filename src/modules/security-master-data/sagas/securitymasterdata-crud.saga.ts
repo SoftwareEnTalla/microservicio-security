@@ -47,6 +47,11 @@ import {
   DeleteSecurityMasterDataCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class SecurityMasterDataCrudSaga {
   private readonly logger = new Logger(SecurityMasterDataCrudSaga.name);
@@ -63,8 +68,9 @@ export class SecurityMasterDataCrudSaga {
       ofType(SecurityMasterDataCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de SecurityMasterData: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleSecurityMasterDataCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class SecurityMasterDataCrudSaga {
       ofType(SecurityMasterDataUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de SecurityMasterData: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleSecurityMasterDataUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class SecurityMasterDataCrudSaga {
       ofType(SecurityMasterDataDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de SecurityMasterData: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleSecurityMasterDataDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class SecurityMasterDataCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityMasterDataCrudSaga.name)
+      .get(SecurityMasterDataCrudSaga.name),
+  })
+  private async handleSecurityMasterDataCreated(event: SecurityMasterDataCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SecurityMasterData Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityMasterDataCrudSaga.name)
+      .get(SecurityMasterDataCrudSaga.name),
+  })
+  private async handleSecurityMasterDataUpdated(event: SecurityMasterDataUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SecurityMasterData Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityMasterDataCrudSaga.name)
+      .get(SecurityMasterDataCrudSaga.name),
+  })
+  private async handleSecurityMasterDataDeleted(event: SecurityMasterDataDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SecurityMasterData Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

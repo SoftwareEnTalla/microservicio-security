@@ -61,6 +61,7 @@ import { SecurityMasterDataLoggingInterceptor } from "../interceptors/securityma
 
 //Event-Sourcing dependencies
 import { EventStoreService } from "../shared/event-store/event-store.service";
+import { SecurityMasterDataSeedService } from "../services/security-master-data-seed.service";
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMasterDataQueryService,
     SecurityMasterDataCommandService,
+    SecurityMasterDataSeedService,
   
     //Repositories
     SecurityMasterDataCommandRepository,

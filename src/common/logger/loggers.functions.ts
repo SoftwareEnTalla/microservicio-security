@@ -7,6 +7,8 @@ import {
 } from "src/interfaces/log-context";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@core/logs/logger";
+import { KafkaLoggerClient } from "./kafka-logger.client";
+import { HttpLoggerClient } from "./http-logger.client";
 
 function getEnhancedContext(): LogContext {
   const error = new Error();
@@ -84,6 +86,9 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
         const logData: HttpLoggerApiRest = {
           endpoint: getRemoteApiLoggerUrl(),
           method: "POST",
+          headers: process.env.LOG_API_AUTH_TOKEN
+            ? { Authorization: `Bearer ${process.env.LOG_API_AUTH_TOKEN}` }
+            : undefined,
           body: {
             layer,
             uuid,
@@ -98,7 +103,7 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
           },
         };
 
-        if (client) await handleLogDelivery(client, logData, callback);
+        await handleLogDelivery(client, logData, callback);
 
         return result;
       } catch (error: any) {
@@ -114,6 +119,9 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
         const errorLogData: HttpLoggerApiRest = {
           endpoint: getRemoteApiLoggerUrl(),
           method: "POST",
+          headers: process.env.LOG_API_AUTH_TOKEN
+            ? { Authorization: `Bearer ${process.env.LOG_API_AUTH_TOKEN}` }
+            : undefined,
           body: {
             layer,
             uuid,
@@ -132,7 +140,7 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
           },
         };
 
-        if (client) await handleLogDelivery(client, errorLogData, callback);
+        await handleLogDelivery(client, errorLogData, callback);
 
         throw error;
       }
@@ -161,40 +169,135 @@ function getFileInfo(): [string, number] {
 
   return ["No se pudo obtener información del archivo", -1];
 }
-// Función auxiliar para manejar el envío de logs
+// Función auxiliar para manejar el envío de logs.
+//
+// Modos controlados por LOG_DELIVERY_MODE (case-insensitive):
+//   KAFKA  (default) → Productor Kafka al tópico codetrace-execution-trace.
+//                      Si Kafka no está disponible, hace fallback a REST.
+//   EVENT            → Alias de KAFKA (compatibilidad hacia atrás).
+//   REST             → Solo HTTP POST al endpoint de codetrace
+//                      (LOG_API_BASE_URL + /codetraces/command).
+//
+// En cualquier modo, si LOG_API_BASE_URL está configurada el fallback REST
+// utiliza un HttpLoggerClient interno (lazy singleton) sin necesidad de pasar
+// `client` al decorator @LogExecutionTime.
+
+let restClientSingleton: HttpLoggerClient | null = null;
+let restClientUnavailable = false;
+function getDefaultRestClient(): HttpLoggerClient | null {
+  if (restClientUnavailable) return null;
+  if (restClientSingleton) return restClientSingleton;
+  const baseUrl = process.env.LOG_API_BASE_URL;
+  if (!baseUrl) {
+    restClientUnavailable = true;
+    return null;
+  }
+  try {
+    restClientSingleton = new HttpLoggerClient(
+      baseUrl,
+      process.env.LOG_API_STRICT_SSL !== "false",
+    );
+    return restClientSingleton;
+  } catch (err: any) {
+    logger.warn(
+      `No se pudo inicializar HttpLoggerClient (${baseUrl}): ${err.message}`,
+    );
+    restClientUnavailable = true;
+    return null;
+  }
+}
+
+function buildRestLogData(logData: HttpLoggerApiRest, viaLabel: string): HttpLoggerApiRest {
+  const serviceName = process.env.APP_NAME || "unknown-service";
+  return {
+    ...logData,
+    headers: {
+      ...(logData.headers || {}),
+      "X-Trace-Source": serviceName,
+    },
+    body: {
+      name: `[${serviceName}] ${logData.body.functionName || "unknown"}`.substring(0, 100),
+      description: JSON.stringify({
+        ...logData.body,
+        sourceService: serviceName,
+        deliveredVia: viaLabel,
+      }),
+      createdBy: serviceName,
+      isActive: true,
+    } as any,
+  };
+}
+
+async function tryKafka(logData: HttpLoggerApiRest): Promise<boolean> {
+  const kafkaClient = KafkaLoggerClient.getInstance();
+  try {
+    const connected = await kafkaClient.connect();
+    if (!connected) return false;
+    return await kafkaClient.send(logData);
+  } catch (err: any) {
+    logger.warn(`Kafka delivery falló: ${err.message}`);
+    return false;
+  }
+}
+
+async function tryRest(
+  logData: HttpLoggerApiRest,
+  viaLabel: string,
+  client: ILoggerClient | undefined,
+  callback:
+    | ((data: HttpLoggerApiRest, client: ILoggerClient) => Promise<boolean>)
+    | undefined,
+): Promise<boolean> {
+  const restLogData = buildRestLogData(logData, viaLabel);
+  const effectiveClient: ILoggerClient | null = client || getDefaultRestClient();
+  if (!effectiveClient) {
+    logger.warn(
+      "REST delivery no disponible: ni client ni LOG_API_BASE_URL configurados",
+    );
+    return false;
+  }
+
+  try {
+    if (!effectiveClient.isConnected) {
+      await effectiveClient.connect();
+    }
+    if (callback && client) {
+      const success = await callback(restLogData, client);
+      if (!success) {
+        logger.warn("Callback REST devolvió false");
+      }
+      return !!success;
+    }
+    return await effectiveClient.send(restLogData);
+  } catch (err: any) {
+    logger.error(`Error en envío REST: ${err.message}`);
+    return false;
+  }
+}
+
 async function handleLogDelivery(
-  client: ILoggerClient,
+  client: ILoggerClient | undefined,
   logData: HttpLoggerApiRest,
   callback:
     | ((data: HttpLoggerApiRest, client: ILoggerClient) => Promise<boolean>)
-    | undefined
+    | undefined,
 ) {
-  try {
-    const connected = await client.connect();
+  const mode = (process.env.LOG_DELIVERY_MODE || "KAFKA").toUpperCase();
+  const restOnly = mode === "REST";
 
-    if (connected && callback) {
-      // Si hay callback, usarlo como canal principal
-      const success = await callback(logData, client);
-      if (!success) {
-        logger.warn("Callback ejecutado pero devolvió false");
-      }
-    } else {
-      // Si no hay callback, usar el client directamente
-      if (connected) {
-        await client.send(logData);
-        return client.close();
-      }
-      return false;
-    }
-  } catch (err: any | unknown) {
-    logger.error(`Error en el envío del log: ${err.message}`);
-  } finally {
-    try {
-      return await client.close();
-    } catch (closeError: any | unknown) {
-      logger.error(`Error cerrando conexión del logger: ${closeError.message}`);
-    }
+  if (!restOnly) {
+    // Modo KAFKA / EVENT (default): intentar Kafka primero
+    const kafkaOk = await tryKafka(logData);
+    if (kafkaOk) return;
+    logger.warn(
+      "Kafka no entregó la traza, usando REST como fallback",
+    );
+    await tryRest(logData, "rest-fallback", client, callback);
+    return;
   }
+
+  // Modo REST explícito
+  await tryRest(logData, "rest", client, callback);
 }
 
 function calculateDuration(

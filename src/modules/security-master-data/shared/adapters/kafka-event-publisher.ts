@@ -36,11 +36,29 @@ import { randomUUID } from 'crypto';
 import { resolveEventDefinition } from '../../events/event-registry';
 //logger
 import { logger } from '@core/logs/logger';
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
 
 @Injectable()
 export class KafkaEventPublisher implements IEventPublisher {
   constructor(private readonly kafkaService: KafkaService) {}
 
+  @LogExecutionTime({
+    layer: 'event-publisher',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace event-publisher event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de event-publisher:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(KafkaEventPublisher.name)
+      .get(KafkaEventPublisher.name),
+  })
   async publish<T extends IEvent>(event: T) {
     if(process.env.KAFKA_ENABLED && process.env.KAFKA_ENABLED==='true'){
       const topic = this.resolveTopic(event);

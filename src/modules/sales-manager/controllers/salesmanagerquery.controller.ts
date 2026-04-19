@@ -50,6 +50,7 @@ import { PaginationArgs } from "src/common/dto/args/pagination.args";
 import { OrderBy, valueOfOrderBy } from "src/common/types/common.types";
 import { Helper } from "src/common/helpers/helpers";
 import { SalesManagerDto } from "../dtos/all-dto";
+import { SalesManagerReferralService } from "../services/sales-manager-referral.service";
 
 import { logger } from '@core/logs/logger';
 
@@ -61,7 +62,34 @@ import { logger } from '@core/logs/logger';
 export class SalesManagerQueryController {
   #logger = new Logger(SalesManagerQueryController.name);
 
-  constructor(private readonly service: SalesManagerQueryService) {}
+  constructor(
+    private readonly service: SalesManagerQueryService,
+    private readonly referralService: SalesManagerReferralService,
+  ) {}
+
+  @Get(":userId/referral-tree")
+  @ApiOperation({ summary: "Obtiene árbol jerárquico de referidos." })
+  @ApiParam({ name: "userId", type: String })
+  @ApiQuery({ name: "maxDepth", required: false, type: Number })
+  async getReferralTree(
+    @Param("userId") userId: string,
+    @Query("maxDepth") maxDepth?: string,
+  ) {
+    const depth = maxDepth ? parseInt(maxDepth, 10) : 5;
+    return this.referralService.buildReferralTree(userId, depth);
+  }
+
+  @Get(":userId/ancestors")
+  @ApiOperation({ summary: "Lista cadena ancestor de referidos." })
+  @ApiParam({ name: "userId", type: String })
+  @ApiQuery({ name: "maxDepth", required: false, type: Number })
+  async getAncestors(
+    @Param("userId") userId: string,
+    @Query("maxDepth") maxDepth?: string,
+  ) {
+    const depth = maxDepth ? parseInt(maxDepth, 10) : 10;
+    return this.referralService.listAncestors(userId, depth);
+  }
 
   @Get("list")
   @ApiOperation({ summary: "Get all salesmanager with optional pagination" })

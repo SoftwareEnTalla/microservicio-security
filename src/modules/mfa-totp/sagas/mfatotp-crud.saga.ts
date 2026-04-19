@@ -47,6 +47,11 @@ import {
   DeleteMfaTotpCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class MfaTotpCrudSaga {
   private readonly logger = new Logger(MfaTotpCrudSaga.name);
@@ -63,8 +68,9 @@ export class MfaTotpCrudSaga {
       ofType(MfaTotpCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de MfaTotp: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleMfaTotpCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class MfaTotpCrudSaga {
       ofType(MfaTotpUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de MfaTotp: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleMfaTotpUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class MfaTotpCrudSaga {
       ofType(MfaTotpDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de MfaTotp: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleMfaTotpDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class MfaTotpCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(MfaTotpCrudSaga.name)
+      .get(MfaTotpCrudSaga.name),
+  })
+  private async handleMfaTotpCreated(event: MfaTotpCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga MfaTotp Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(MfaTotpCrudSaga.name)
+      .get(MfaTotpCrudSaga.name),
+  })
+  private async handleMfaTotpUpdated(event: MfaTotpUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga MfaTotp Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(MfaTotpCrudSaga.name)
+      .get(MfaTotpCrudSaga.name),
+  })
+  private async handleMfaTotpDeleted(event: MfaTotpDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga MfaTotp Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

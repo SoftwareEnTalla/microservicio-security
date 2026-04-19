@@ -553,7 +553,74 @@ export class LoginAuthenticateWithPasswordDto {
   @Field(() => String, { description: 'PIN de activación de 6 dígitos', nullable: true })
   activationPin?: string;
 
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'IP de origen (opcional, se infiere si no se pasa).' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  ipAddress?: string;
+
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'User-Agent del cliente (opcional, se infiere).' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  userAgent?: string;
+
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'Huella de dispositivo (opcional).' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  deviceFingerprint?: string;
+
   constructor(partial: Partial<LoginAuthenticateWithPasswordDto> = {}) {
+    Object.assign(this, partial);
+  }
+}
+
+@InputType()
+export class LoginFederatedCallbackDto {
+  @ApiProperty({ type: () => String, nullable: false, description: 'Código de proveedor (GOOGLE, GITHUB, META, WSO2, FIREBASE, TWITTER, etc.)' })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  providerCode!: string;
+
+  @ApiProperty({ type: () => String, nullable: false, description: 'Identificador del sujeto externo (subject/email) retornado por el IdP.' })
+  @IsString()
+  @IsNotEmpty()
+  @Field(() => String, { nullable: false })
+  externalSubject!: string;
+
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'Email del sujeto externo (para mapeo claim→user).' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  externalEmail?: string;
+
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'Estado CSRF devuelto por el IdP.' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  state?: string;
+
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'Code del authorization_code flow OAuth/OIDC.' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  code?: string;
+
+  @ApiProperty({ type: () => Object, nullable: true, required: false, description: 'Claims normalizados devueltos por el IdP.' })
+  @IsObject()
+  @IsOptional()
+  @Field(() => GraphQLJSON, { nullable: true })
+  claims?: Record<string, any>;
+
+  @ApiProperty({ type: () => String, nullable: true, required: false, description: 'idToken JWT firmado por el IdP (OIDC). Si se provee, se valida firma, exp, aud e iss.' })
+  @IsString()
+  @IsOptional()
+  @Field(() => String, { nullable: true })
+  idToken?: string;
+
+  constructor(partial: Partial<LoginFederatedCallbackDto> = {}) {
     Object.assign(this, partial);
   }
 }

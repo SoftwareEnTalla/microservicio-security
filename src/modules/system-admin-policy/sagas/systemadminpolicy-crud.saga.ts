@@ -47,6 +47,11 @@ import {
   DeleteSystemAdminPolicyCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class SystemAdminPolicyCrudSaga {
   private readonly logger = new Logger(SystemAdminPolicyCrudSaga.name);
@@ -63,8 +68,9 @@ export class SystemAdminPolicyCrudSaga {
       ofType(SystemAdminPolicyCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de SystemAdminPolicy: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleSystemAdminPolicyCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class SystemAdminPolicyCrudSaga {
       ofType(SystemAdminPolicyUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de SystemAdminPolicy: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleSystemAdminPolicyUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class SystemAdminPolicyCrudSaga {
       ofType(SystemAdminPolicyDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de SystemAdminPolicy: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleSystemAdminPolicyDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class SystemAdminPolicyCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SystemAdminPolicyCrudSaga.name)
+      .get(SystemAdminPolicyCrudSaga.name),
+  })
+  private async handleSystemAdminPolicyCreated(event: SystemAdminPolicyCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SystemAdminPolicy Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SystemAdminPolicyCrudSaga.name)
+      .get(SystemAdminPolicyCrudSaga.name),
+  })
+  private async handleSystemAdminPolicyUpdated(event: SystemAdminPolicyUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SystemAdminPolicy Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SystemAdminPolicyCrudSaga.name)
+      .get(SystemAdminPolicyCrudSaga.name),
+  })
+  private async handleSystemAdminPolicyDeleted(event: SystemAdminPolicyDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SystemAdminPolicy Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

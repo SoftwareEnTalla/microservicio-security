@@ -49,6 +49,7 @@ import { UserQueryRepository } from "../repositories/userquery.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { UserResponse, UsersResponse } from "../types/user.types";
 import { MfaTotp } from "../../mfa-totp/entities/mfa-totp.entity";
+import { PasswordPolicyService } from "../../../common/services/password-policy.service";
 
 @Injectable()
 export class UserService {
@@ -58,6 +59,7 @@ export class UserService {
     private readonly repository: UserRepository,
     @InjectRepository(MfaTotp)
     private readonly mfaTotpRepository: Repository<MfaTotp>,
+    private readonly passwordPolicy: PasswordPolicyService,
   ) {}
 
   async create(payload: CreateUserMinimalDto): Promise<UserResponse<User>> {
@@ -478,15 +480,7 @@ export class UserService {
   }
 
   private validatePassword(password: string): void {
-    const normalized = (password || "").trim();
-    const minLength = Number(process.env.USER_PASSWORD_MIN_LENGTH || 8);
-
-    if (!normalized) {
-      throw new BadRequestException("La contraseña es obligatoria.");
-    }
-    if (normalized.length < minLength) {
-      throw new BadRequestException(`La contraseña debe tener al menos ${minLength} caracteres.`);
-    }
+    this.passwordPolicy.validate(password);
   }
 
   private hashPassword(password: string): string {

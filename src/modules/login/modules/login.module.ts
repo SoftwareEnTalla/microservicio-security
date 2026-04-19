@@ -47,6 +47,10 @@ import { User } from "../../user/entities/user.entity";
 import { SessionToken } from "../../session-token/entities/session-token.entity";
 import { MfaTotp } from "../../mfa-totp/entities/mfa-totp.entity";
 import { BaseEntity as MfaTotpBaseEntity } from "../../mfa-totp/entities/base.entity";
+import { IdentityFederation } from "../../identity-federation/entities/identity-federation.entity";
+import { BaseEntity as IdentityFederationBaseEntity } from "../../identity-federation/entities/base.entity";
+import { RateLimitService } from "../../../common/services/rate-limit.service";
+import { FederationTokenValidatorService } from "../../identity-federation/services/federation-token-validator.service";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -70,7 +74,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, Login, User, SessionToken, MfaTotpBaseEntity, MfaTotp]), // Incluir BaseEntity para herencia
+    TypeOrmModule.forFeature([BaseEntity, Login, User, SessionToken, MfaTotpBaseEntity, MfaTotp, IdentityFederationBaseEntity, IdentityFederation]), // Incluir BaseEntity para herencia
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [LoginCommandController, LoginQueryController],
@@ -80,6 +84,8 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     LoginQueryService,
     LoginCommandService,
       LoginService,
+    RateLimitService,
+    FederationTokenValidatorService,
     //Repositories
     LoginCommandRepository,
     LoginQueryRepository,

@@ -34,6 +34,8 @@ import { SystemAdminPolicyCommandController } from "../controllers/systemadminpo
 import { SystemAdminPolicyQueryController } from "../controllers/systemadminpolicyquery.controller";
 import { SystemAdminPolicyCommandService } from "../services/systemadminpolicycommand.service";
 import { SystemAdminPolicyQueryService } from "../services/systemadminpolicyquery.service";
+import { AdminActionAuditService } from "../services/admin-action-audit.service";
+import { SystemAdminGuard } from "../guards/system-admin.guard";
 
 import { SystemAdminPolicyCommandRepository } from "../repositories/systemadminpolicycommand.repository";
 import { SystemAdminPolicyQueryRepository } from "../repositories/systemadminpolicyquery.repository";
@@ -75,6 +77,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SystemAdminPolicyQueryService,
     SystemAdminPolicyCommandService,
+    AdminActionAuditService,
   
     //Repositories
     SystemAdminPolicyCommandRepository,
@@ -84,6 +87,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     SystemAdminPolicyResolver,
     //Guards
     SystemAdminPolicyAuthGuard,
+    SystemAdminGuard,
     //Interceptors
     SystemAdminPolicyInterceptor,
     SystemAdminPolicyLoggingInterceptor,
@@ -115,6 +119,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SystemAdminPolicyQueryService,
     SystemAdminPolicyCommandService,
+    AdminActionAuditService,
   
     //Repositories
     SystemAdminPolicyCommandRepository,
@@ -124,6 +129,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     SystemAdminPolicyResolver,
     //Guards
     SystemAdminPolicyAuthGuard,
+    SystemAdminGuard,
     //Interceptors
     SystemAdminPolicyInterceptor,
     SystemAdminPolicyLoggingInterceptor,

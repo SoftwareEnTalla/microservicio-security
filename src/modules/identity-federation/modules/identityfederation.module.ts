@@ -34,6 +34,7 @@ import { IdentityFederationCommandController } from "../controllers/identityfede
 import { IdentityFederationQueryController } from "../controllers/identityfederationquery.controller";
 import { IdentityFederationCommandService } from "../services/identityfederationcommand.service";
 import { IdentityFederationQueryService } from "../services/identityfederationquery.service";
+import { FederationTokenValidatorService } from "../services/federation-token-validator.service";
 
 import { IdentityFederationCommandRepository } from "../repositories/identityfederationcommand.repository";
 import { IdentityFederationQueryRepository } from "../repositories/identityfederationquery.repository";
@@ -75,6 +76,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     IdentityFederationQueryService,
     IdentityFederationCommandService,
+    FederationTokenValidatorService,
   
     //Repositories
     IdentityFederationCommandRepository,
@@ -115,6 +117,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     IdentityFederationQueryService,
     IdentityFederationCommandService,
+    FederationTokenValidatorService,
   
     //Repositories
     IdentityFederationCommandRepository,

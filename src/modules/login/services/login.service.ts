@@ -35,14 +35,23 @@ import { createHash, randomInt, randomUUID } from "crypto";
 import { Repository } from "typeorm";
 import { Login } from "../entities/login.entity";
 import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
-import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto } from "../dtos/all-dto";
+import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto, LoginFederatedCallbackDto } from "../dtos/all-dto";
 import { User } from "../../user/entities/user.entity";
 import { SessionToken } from "../../session-token/entities/session-token.entity";
 import { MfaTotp } from "../../mfa-totp/entities/mfa-totp.entity";
+import { IdentityFederation } from "../../identity-federation/entities/identity-federation.entity";
 import { BaseEvent } from "../events/base.event";
 import { FederatedLoginStartedEvent, LoginFailedEvent, LoginLoggedOutEvent, LoginRefreshedEvent, LoginSucceededEvent } from "../events/exporting.event";
 import { EventStoreService } from "../shared/event-store/event-store.service";
 import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
+import { RateLimitService } from "../../../common/services/rate-limit.service";
+import { FederationTokenValidatorService } from "../../identity-federation/services/federation-token-validator.service";
+
+interface LoginContext {
+  ipAddress?: string;
+  userAgent?: string;
+  deviceFingerprint?: string;
+}
 
 @Injectable()
 export class LoginService {
@@ -55,9 +64,13 @@ export class LoginService {
     private readonly sessionTokenRepository: Repository<SessionToken>,
     @InjectRepository(MfaTotp)
     private readonly mfaTotpRepository: Repository<MfaTotp>,
+    @InjectRepository(IdentityFederation)
+    private readonly idpRepository: Repository<IdentityFederation>,
     private readonly eventBus: EventBus,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
+    private readonly rateLimit: RateLimitService,
+    private readonly federationValidator: FederationTokenValidatorService,
   ) {}
 
   async authenticateWithPassword(payload: LoginAuthenticateWithPasswordDto): Promise<LoginResponse<Login>> {
@@ -68,10 +81,20 @@ export class LoginService {
       throw new BadRequestException("El identificador y la contraseña son obligatorios.");
     }
 
+    const context: LoginContext = {
+      ipAddress: (payload.ipAddress || "").trim(),
+      userAgent: (payload.userAgent || "").trim(),
+      deviceFingerprint: (payload.deviceFingerprint || "").trim(),
+    };
+
+    // Rate limiting por identifier+IP
+    const rlKey = `login:${identifier}:${context.ipAddress || "-"}`;
+    this.rateLimit.consume(rlKey);
+
     const user = await this.findUserByIdentifier(identifier);
 
     if (!user) {
-      await this.registerFailedLogin(identifier, "Usuario no encontrado.");
+      await this.registerFailedLogin(identifier, "Usuario no encontrado.", context);
       throw new UnauthorizedException("Credenciales inválidas.");
     }
 
@@ -81,25 +104,28 @@ export class LoginService {
       if (isPendingVerification) {
         // Verificar contraseña primero
         if (!this.matchesPassword(password, user.passwordHash)) {
-          await this.registerFailedLogin(identifier, "Contraseña inválida.");
+          await this.registerFailedLogin(identifier, "Contraseña inválida.", context);
           throw new UnauthorizedException("Credenciales inválidas.");
         }
         // Exigir PIN de activación
-        return this.handleActivationByPin(user, payload, identifier);
+        return this.handleActivationByPin(user, payload, identifier, context);
       }
-      await this.registerFailedLogin(identifier, `La cuenta ${user.accountStatus || 'INACTIVA'} no permite autenticación.`);
+      await this.registerFailedLogin(identifier, `La cuenta ${user.accountStatus || 'INACTIVA'} no permite autenticación.`, context);
       throw new ForbiddenException("La cuenta no está habilitada para autenticación local.");
     }
 
     if (user.federatedOnly) {
-      await this.registerFailedLogin(identifier, "La cuenta solo admite autenticación federada.");
+      await this.registerFailedLogin(identifier, "La cuenta solo admite autenticación federada.", context);
       throw new ForbiddenException("La cuenta solo admite autenticación federada.");
     }
 
     if (!this.matchesPassword(password, user.passwordHash)) {
-      await this.registerFailedLogin(identifier, "Contraseña inválida.");
+      await this.registerFailedLogin(identifier, "Contraseña inválida.", context);
       throw new UnauthorizedException("Credenciales inválidas.");
     }
+
+    // Reset rate limiter en autenticación exitosa
+    this.rateLimit.reset(rlKey);
 
     const issuedAt = new Date();
     const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
@@ -149,9 +175,9 @@ export class LoginService {
       sessionCode,
       authStatus: "SUCCEEDED",
       failureReason: "",
-      ipAddress: "",
-      deviceFingerprint: "",
-      userAgent: "",
+      ipAddress: context.ipAddress || "",
+      deviceFingerprint: context.deviceFingerprint || "",
+      userAgent: context.userAgent || "",
       accessTokenIssued: true,
       refreshTokenIssued: true,
       pkceRequired: false,
@@ -438,7 +464,7 @@ export class LoginService {
     });
   }
 
-  private async registerFailedLogin(identifier: string, reason: string): Promise<Login> {
+  private async registerFailedLogin(identifier: string, reason: string, context?: LoginContext): Promise<Login> {
     const failedLogin = this.loginRepository.create({
       name: `Login fallido ${identifier}`,
       description: `Intento fallido de autenticación para ${identifier}`,
@@ -454,9 +480,9 @@ export class LoginService {
       sessionCode: "",
       authStatus: "FAILED",
       failureReason: reason,
-      ipAddress: "",
-      deviceFingerprint: "",
-      userAgent: "",
+      ipAddress: context?.ipAddress || "",
+      deviceFingerprint: context?.deviceFingerprint || "",
+      userAgent: context?.userAgent || "",
       accessTokenIssued: false,
       refreshTokenIssued: false,
       pkceRequired: false,
@@ -557,12 +583,13 @@ export class LoginService {
     user: User,
     payload: LoginAuthenticateWithPasswordDto,
     identifier: string,
+    context?: LoginContext,
   ): Promise<LoginResponse<Login>> {
     const activationPin = (payload.activationPin || "").trim();
 
     const mfaTotp = await this.mfaTotpRepository.findOne({ where: { userId: user.id } });
     if (!mfaTotp) {
-      await this.registerFailedLogin(identifier, "No se encontró configuración MFA para esta cuenta.");
+      await this.registerFailedLogin(identifier, "No se encontró configuración MFA para esta cuenta.", context);
       throw new ForbiddenException("No se encontró configuración de activación para esta cuenta.");
     }
 
@@ -635,18 +662,18 @@ export class LoginService {
     // PASO 2: Viene PIN — verificar y activar
 
     if (mfaTotp.pinVerified) {
-      await this.registerFailedLogin(identifier, "El PIN ya fue utilizado. Contacte soporte.");
+      await this.registerFailedLogin(identifier, "El PIN ya fue utilizado. Contacte soporte.", context);
       throw new ForbiddenException("El PIN de activación ya fue utilizado.");
     }
 
     if (mfaTotp.activationPinExpiresAt && new Date() > mfaTotp.activationPinExpiresAt) {
-      await this.registerFailedLogin(identifier, "El PIN de activación ha expirado.");
+      await this.registerFailedLogin(identifier, "El PIN de activación ha expirado.", context);
       throw new ForbiddenException("El PIN de activación ha expirado. Intente hacer login sin PIN para obtener uno nuevo.");
     }
 
     const pinHash = this.sha256(activationPin);
     if (mfaTotp.activationPin !== pinHash) {
-      await this.registerFailedLogin(identifier, "PIN de activación incorrecto.");
+      await this.registerFailedLogin(identifier, "PIN de activación incorrecto.", context);
       throw new UnauthorizedException("PIN de activación incorrecto.");
     }
 
@@ -758,5 +785,209 @@ export class LoginService {
       expiresAt,
       message: "Cuenta activada y autenticación completada correctamente.",
     });
+  }
+
+  /**
+   * Finaliza el flujo federado OAuth/OIDC tras el callback del IdP.
+   * Normaliza claims, crea/enlaza el usuario local y emite tokens propios.
+   */
+  async finalizeFederatedLogin(payload: LoginFederatedCallbackDto): Promise<LoginResponse<Login>> {
+    const providerCode = (payload.providerCode || "").trim().toUpperCase();
+    const externalSubject = (payload.externalSubject || "").trim();
+    if (!providerCode || !externalSubject) {
+      throw new BadRequestException("providerCode y externalSubject son obligatorios.");
+    }
+
+    // Verificar proveedor habilitado
+    const provider = await this.idpRepository.findOne({
+      where: { providerType: providerCode, enabled: true },
+    });
+    if (!provider) {
+      throw new BadRequestException(`El proveedor ${providerCode} no está habilitado.`);
+    }
+
+    // Validar firma/aud/exp/iss del idToken (si viene) — regla UH-IdentityFederation
+    const validation = await this.federationValidator.validate(provider, {
+      idToken: (payload as any).idToken,
+      claims: payload.claims || {},
+    });
+    if (!validation.ok) {
+      throw new BadRequestException(`Token federado inválido: ${validation.reason}`);
+    }
+
+    // Normalizar claims mediante claimMappingPolicy del IdP
+    const mappedClaims = this.mapClaims(validation.claims, provider.claimMappingPolicy || {});
+    const email = (payload.externalEmail || mappedClaims.email || "").toLowerCase();
+
+    // Resolver usuario: por federatedSubject en metadata, o por email
+    let user: User | null = null;
+    if (email) {
+      user = await this.userRepository.findOne({ where: { email } });
+    }
+
+    if (!user) {
+      // Aprovisionar automáticamente si la política lo permite
+      if ((process.env.FEDERATION_AUTO_PROVISION || "true").toLowerCase() !== "true") {
+        throw new UnauthorizedException("No existe usuario local y el aprovisionamiento federado está deshabilitado.");
+      }
+      const username = mappedClaims.username || (email ? email.split("@")[0] : externalSubject).slice(0, 50);
+      const now = new Date();
+      const newUser = this.userRepository.create({
+        name: mappedClaims.name || username,
+        description: `Usuario aprovisionado vía federación ${providerCode}`,
+        createdBy: "federation",
+        isActive: true,
+        code: randomUUID(),
+        username,
+        email: email || `${externalSubject}@${providerCode.toLowerCase()}.federated`,
+        phone: mappedClaims.phone || null,
+        passwordHash: "",
+        identifierType: "EMAIL",
+        identifierValue: email || `${externalSubject}@${providerCode.toLowerCase()}.federated`,
+        accountStatus: "ACTIVE",
+        userType: "CUSTOMER",
+        termsAccepted: true,
+        termsAcceptedAt: now,
+        lastLoginAt: undefined,
+        passwordChangedAt: now,
+        mfaEnabled: false,
+        totpEnabled: false,
+        federatedOnly: true,
+        metadata: {
+          federation: { provider: providerCode, subject: externalSubject, claims: mappedClaims },
+        },
+        creationDate: now,
+        modificationDate: now,
+      } as Partial<User>);
+      (newUser as any).type = "user";
+      user = await this.userRepository.save(newUser);
+    } else {
+      // Enlazar identidad federada si no estaba
+      const metadata = user.metadata || {};
+      const existingFed = metadata.federation || {};
+      user.metadata = {
+        ...metadata,
+        federation: {
+          ...existingFed,
+          provider: providerCode,
+          subject: externalSubject,
+          claims: mappedClaims,
+        },
+      };
+      await this.userRepository.save(user);
+    }
+
+    // Emitir sesión propia
+    const issuedAt = new Date();
+    const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
+    const sessionCode = this.generateOpaqueToken("session");
+    const refreshToken = this.generateOpaqueToken("refresh");
+    const accessToken = this.generateOpaqueToken("access");
+
+    const sessionToken = new SessionToken();
+    Object.assign(sessionToken, {
+      name: `Sesión federada ${providerCode}`,
+      description: `Sesión emitida tras login federado con ${providerCode}`,
+      createdBy: "login-service",
+      isActive: true,
+      userId: user.id,
+      subscriberId: "swagger",
+      sessionCode,
+      tokenId: this.sha256(refreshToken),
+      tokenType: "REFRESH_TOKEN",
+      issuedAt,
+      expiresAt,
+      certificationStatus: "ISSUED",
+      authenticatedUserAcls: this.resolveUserAcls(user),
+      metadata: { federatedProvider: providerCode, externalSubject, accessTokenHash: this.sha256(accessToken) },
+    });
+    await this.sessionTokenRepository.save(sessionToken);
+
+    const login = this.loginRepository.create({
+      name: `Federated login ${providerCode}`,
+      description: `Autenticación federada completada con ${providerCode}`,
+      createdBy: "login-service",
+      isActive: true,
+      correlationCode: payload.state || this.generateOpaqueToken("login"),
+      userId: user.id,
+      loginIdentifier: email || externalSubject,
+      loginIdentifierType: "FEDERATED",
+      flowType: "FEDERATED",
+      authMethod: provider.protocolFamily || "OIDC",
+      providerCode,
+      subscriberId: "swagger",
+      sessionCode,
+      authStatus: "SUCCEEDED",
+      failureReason: "",
+      ipAddress: "",
+      deviceFingerprint: "",
+      userAgent: "",
+      accessTokenIssued: true,
+      refreshTokenIssued: true,
+      pkceRequired: false,
+      authenticatedUserAcls: this.resolveUserAcls(user),
+      occurredAt: issuedAt,
+      metadata: {
+        externalSubject,
+        mappedClaims,
+        refreshTokenId: sessionToken.tokenId,
+        accessTokenHash: this.sha256(accessToken),
+      },
+    });
+    const persistedLogin = await this.loginRepository.save(login);
+
+    await this.userRepository.update(user.id, { lastLoginAt: issuedAt });
+
+    await this.publishDomainEvent(
+      LoginSucceededEvent.create(
+        String(persistedLogin.id),
+        persistedLogin,
+        String(persistedLogin.createdBy || "login-service"),
+        String(persistedLogin.correlationCode || persistedLogin.id),
+      ),
+    );
+
+    return this.buildLoginResponse(persistedLogin, {
+      accessToken,
+      refreshToken,
+      sessionCode,
+      userId: user.id,
+      expiresAt,
+      message: `Autenticación federada completada con ${providerCode}.`,
+    });
+  }
+
+  private mapClaims(
+    rawClaims: Record<string, any>,
+    policy: Record<string, any>,
+  ): Record<string, any> {
+    const mapping = (policy && typeof policy === "object" ? policy : {}) as Record<string, string>;
+    const defaults: Record<string, string> = {
+      email: "email",
+      username: "preferred_username",
+      name: "name",
+      phone: "phone_number",
+      subject: "sub",
+    };
+    const effective = { ...defaults, ...mapping };
+    const result: Record<string, any> = {};
+    for (const [internal, external] of Object.entries(effective)) {
+      const value = this.getClaimValue(rawClaims, external);
+      if (value !== undefined && value !== null) {
+        result[internal] = value;
+      }
+    }
+    return result;
+  }
+
+  private getClaimValue(claims: Record<string, any>, path: string): any {
+    if (!path) return undefined;
+    const segments = path.split(".");
+    let cursor: any = claims;
+    for (const seg of segments) {
+      if (cursor === null || cursor === undefined) return undefined;
+      cursor = cursor[seg];
+    }
+    return cursor;
   }
 }

@@ -56,7 +56,7 @@ import { UserProfileDeletedEvent } from '../events/userprofiledeleted.event';
 
 
 //Enfoque Event Sourcing
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, EventBus } from '@nestjs/cqrs';
 import { EventStoreService } from '../shared/event-store/event-store.service';
 import { KafkaEventPublisher } from '../shared/adapters/kafka-event-publisher';
 import { BaseEvent } from '../events/base.event';
@@ -78,6 +78,7 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
     private readonly commandBus: CommandBus,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
+    private readonly eventBus: EventBus,
     @Optional() @Inject('EVENT_SOURCING_CONFIG') 
     private readonly eventSourcingConfig: EventSourcingConfigOptions = EventSourcingHelper.getDefaultConfig()
   ) {
@@ -288,13 +289,15 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
     
     // Publicar evento solo si Event Sourcing está habilitado
     if (this.shouldPublishEvent()) {
-      this.eventPublisher.publish(new UserProfileCreatedEvent(result.id, {
+      const __dualEvt1 = new UserProfileCreatedEvent(result.id, {
         instance: result,
         metadata: {
           initiatedBy: result.creator,
           correlationId: result.id,
         },
-      }));
+      });
+      this.eventBus.publish(__dualEvt1);
+      this.eventPublisher.publish(__dualEvt1);
     }
     return result;
   }
@@ -333,13 +336,15 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
     
     // Publicar eventos solo si Event Sourcing está habilitado
     if (this.shouldPublishEvent()) {
-      this.eventPublisher.publishAll(result.map((el)=>new UserProfileCreatedEvent(el.id, {
+      const __dualEvts2 = result.map((el)=>new UserProfileCreatedEvent(el.id, {
         instance: el,
         metadata: {
           initiatedBy: el.creator,
           correlationId: el.id,
         },
-      })));
+      }));
+      __dualEvts2.forEach((ev: any) => this.eventBus.publish(ev));
+      this.eventPublisher.publishAll(__dualEvts2);
     }
     return result;
   }
@@ -375,13 +380,15 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
     
     if(instance && this.shouldPublishEvent()) {
       logger.info('Ready to publish or fire event UserProfileUpdatedEvent on repository:', instance);
-      this.eventPublisher.publish(new UserProfileUpdatedEvent(instance.id, {
+      const __dualEvt3 = new UserProfileUpdatedEvent(instance.id, {
           instance: instance,
           metadata: {
             initiatedBy: instance.createdBy || 'system',
             correlationId: id,
           },
-        }));
+        });
+      this.eventBus.publish(__dualEvt3);
+      this.eventPublisher.publish(__dualEvt3);
     }   
     return instance;
   }
@@ -415,13 +422,15 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
         if (updatedEntity) {
           updatedEntities.push(updatedEntity);
           if (this.shouldPublishEvent()) {
-            this.eventPublisher.publish(new UserProfileUpdatedEvent(updatedEntity.id, {
+            const __dualEvt4 = new UserProfileUpdatedEvent(updatedEntity.id, {
                 instance: updatedEntity,
                 metadata: {
                   initiatedBy: updatedEntity.createdBy || 'system',
                   correlationId: entity.id,
                 },
-              }));
+              });
+            this.eventBus.publish(__dualEvt4);
+            this.eventPublisher.publish(__dualEvt4);
           }
         }
       }
@@ -460,13 +469,15 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
      
      if (this.shouldPublishEvent()) {
        logger.info('Ready to publish/fire UserProfileDeletedEvent on repository:', result);
-       this.eventPublisher.publish(new UserProfileDeletedEvent(id, {
+       const __dualEvt5 = new UserProfileDeletedEvent(id, {
         instance: entity,
         metadata: {
           initiatedBy: entity.createdBy || 'system',
           correlationId: entity.id,
         },
-      }));
+      });
+       this.eventBus.publish(__dualEvt5);
+       this.eventPublisher.publish(__dualEvt5);
      }
      return result;
   }
@@ -497,7 +508,7 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
     
     if (this.shouldPublishEvent()) {
       logger.info('Ready to publish/fire UserProfileDeletedEvent on repository:', result);
-      this.eventPublisher.publishAll(ids.map(async (id) => {
+      const __dualEvts6 = await Promise.all(ids.map(async (id) => {
           const entity = await this.userprofileRepository.findOne({ id });
           if(!entity){
             throw new NotFoundException(`No se encontro el id: ${id}`);
@@ -510,6 +521,8 @@ export class UserProfileCommandRepository implements IEventHandler<BaseEvent>{
             },
           });
         }));
+      __dualEvts6.forEach((ev: any) => this.eventBus.publish(ev));
+      this.eventPublisher.publishAll(__dualEvts6);
     }
     return result;
   }

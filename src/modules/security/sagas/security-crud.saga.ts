@@ -47,6 +47,11 @@ import {
   DeleteSecurityCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class SecurityCrudSaga {
   private readonly logger = new Logger(SecurityCrudSaga.name);
@@ -63,8 +68,9 @@ export class SecurityCrudSaga {
       ofType(SecurityCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de Security: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleSecurityCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class SecurityCrudSaga {
       ofType(SecurityUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de Security: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleSecurityUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class SecurityCrudSaga {
       ofType(SecurityDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de Security: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleSecurityDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class SecurityCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityCrudSaga.name)
+      .get(SecurityCrudSaga.name),
+  })
+  private async handleSecurityCreated(event: SecurityCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga Security Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityCrudSaga.name)
+      .get(SecurityCrudSaga.name),
+  })
+  private async handleSecurityUpdated(event: SecurityUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga Security Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityCrudSaga.name)
+      .get(SecurityCrudSaga.name),
+  })
+  private async handleSecurityDeleted(event: SecurityDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga Security Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

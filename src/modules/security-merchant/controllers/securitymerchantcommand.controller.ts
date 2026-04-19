@@ -51,6 +51,7 @@ import { Helper } from "src/common/helpers/helpers";
 import { SecurityMerchant } from "../entities/security-merchant.entity";
 import { SecurityMerchantResponse, SecurityMerchantsResponse } from "../types/securitymerchant.types";
 import { CreateSecurityMerchantDto, UpdateSecurityMerchantDto } from "../dtos/all-dto"; 
+import { MerchantApprovalService } from "../services/merchant-approval.service";
 
 //Loggers
 import { LoggerClient } from "src/common/logger/logger.client";
@@ -78,9 +79,53 @@ export class SecurityMerchantCommandController {
   private readonly service: SecurityMerchantCommandService,
   private readonly commandBus: CommandBus,
   private readonly eventStore: EventStoreService,
-  private readonly eventPublisher: KafkaEventPublisher
+  private readonly eventPublisher: KafkaEventPublisher,
+  private readonly approvalService: MerchantApprovalService,
   ) {
     //Coloca aquí la lógica que consideres necesaria para inicializar el controlador
+  }
+
+  @ApiOperation({ summary: "Solicitar aprobación operativa del merchant" })
+  @Post(":id/approval/request")
+  async requestApproval(@Param("id") id: string) {
+    try {
+      return await this.approvalService.requestApproval(id);
+    } catch (error) {
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
+  }
+
+  @ApiOperation({ summary: "Aprobar merchant (solo administrador)" })
+  @Post(":id/approval/approve")
+  async approveMerchant(
+    @Param("id") id: string,
+    @Body() body: { approvedBy?: string } = {},
+  ) {
+    try {
+      return await this.approvalService.approve(id, (body?.approvedBy || "admin").trim());
+    } catch (error) {
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
+  }
+
+  @ApiOperation({ summary: "Rechazar merchant (solo administrador)" })
+  @Post(":id/approval/reject")
+  async rejectMerchant(
+    @Param("id") id: string,
+    @Body() body: { reason: string; rejectedBy?: string },
+  ) {
+    try {
+      return await this.approvalService.reject(
+        id,
+        (body?.reason || "").trim(),
+        (body?.rejectedBy || "admin").trim(),
+      );
+    } catch (error) {
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
   }
 
   @ApiOperation({ summary: "Create a new securitymerchant" })

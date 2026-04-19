@@ -31,6 +31,16 @@ export * from "./rbacacldeleted.event";
 export * from "./rbacaclcreated.event";
 export * from "./rbacaclupdated.event";
 
+export * from "./rolecreated.event";
+export * from "./roleupdated.event";
+export * from "./roledeactivated.event";
+export * from "./roledeleted.event";
+export * from "./permissionassignedtorole.event";
+export * from "./permissionremovedfromrole.event";
+export * from "./userroleassigned.event";
+export * from "./userrolerevoked.event";
+export * from "./authenticateduseraclresolved.event";
+
 export * from "./event-registry";
 export * from "./base.event";
 export * from "./rbacacl-failed.event";

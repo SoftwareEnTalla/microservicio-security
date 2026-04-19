@@ -47,6 +47,11 @@ import {
   DeleteSecurityMerchantCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class SecurityMerchantCrudSaga {
   private readonly logger = new Logger(SecurityMerchantCrudSaga.name);
@@ -63,8 +68,9 @@ export class SecurityMerchantCrudSaga {
       ofType(SecurityMerchantCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de SecurityMerchant: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleSecurityMerchantCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class SecurityMerchantCrudSaga {
       ofType(SecurityMerchantUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de SecurityMerchant: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleSecurityMerchantUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class SecurityMerchantCrudSaga {
       ofType(SecurityMerchantDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de SecurityMerchant: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleSecurityMerchantDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class SecurityMerchantCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityMerchantCrudSaga.name)
+      .get(SecurityMerchantCrudSaga.name),
+  })
+  private async handleSecurityMerchantCreated(event: SecurityMerchantCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SecurityMerchant Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityMerchantCrudSaga.name)
+      .get(SecurityMerchantCrudSaga.name),
+  })
+  private async handleSecurityMerchantUpdated(event: SecurityMerchantUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SecurityMerchant Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityMerchantCrudSaga.name)
+      .get(SecurityMerchantCrudSaga.name),
+  })
+  private async handleSecurityMerchantDeleted(event: SecurityMerchantDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga SecurityMerchant Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

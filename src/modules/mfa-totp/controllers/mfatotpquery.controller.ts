@@ -113,7 +113,7 @@ export class MfaTotpQueryController {
   })
   async findById(@Param("id") id: string): Promise<MfaTotpResponse<MfaTotp>> {
     try {
-      const mfatotp = await this.service.findOne({ where: { id } });
+      const mfatotp = await this.service.findOne({ id });
       if (!mfatotp) {
         throw new NotFoundException(
           "MfaTotp no encontrado para el id solicitado"

@@ -47,6 +47,11 @@ import {
   DeleteIdentityFederationCommand
 } from '../commands/exporting.command';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class IdentityFederationCrudSaga {
   private readonly logger = new Logger(IdentityFederationCrudSaga.name);
@@ -63,8 +68,9 @@ export class IdentityFederationCrudSaga {
       ofType(IdentityFederationCreatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para creación de IdentityFederation: ${event.aggregateId}`);
-        // Lógica post-creación (ej: enviar notificación)
+        void this.handleIdentityFederationCreated(event);
       }),
+      map(() => null),
       map(event => {
         // Ejecutar comandos adicionales si es necesario
         return null;
@@ -79,8 +85,9 @@ export class IdentityFederationCrudSaga {
       ofType(IdentityFederationUpdatedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para actualización de IdentityFederation: ${event.aggregateId}`);
-        // Lógica post-actualización (ej: actualizar caché)
-      })
+        void this.handleIdentityFederationUpdated(event);
+      }),
+      map(() => null)
     );
   };
 
@@ -91,8 +98,9 @@ export class IdentityFederationCrudSaga {
       ofType(IdentityFederationDeletedEvent),
       tap(event => {
         this.logger.log(`Saga iniciada para eliminación de IdentityFederation: ${event.aggregateId}`);
-        // Lógica post-eliminación (ej: limpiar relaciones)
+        void this.handleIdentityFederationDeleted(event);
       }),
+      map(() => null),
       map(event => {
         // Ejemplo: Ejecutar comando de compensación
         // return this.commandBus.execute(new CompensateDeleteCommand(...));
@@ -101,6 +109,78 @@ export class IdentityFederationCrudSaga {
     );
   };
 
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(IdentityFederationCrudSaga.name)
+      .get(IdentityFederationCrudSaga.name),
+  })
+  private async handleIdentityFederationCreated(event: IdentityFederationCreatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga IdentityFederation Created completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(IdentityFederationCrudSaga.name)
+      .get(IdentityFederationCrudSaga.name),
+  })
+  private async handleIdentityFederationUpdated(event: IdentityFederationUpdatedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga IdentityFederation Updated completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
+
+
+  @LogExecutionTime({
+    layer: 'saga',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace saga event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de saga:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(IdentityFederationCrudSaga.name)
+      .get(IdentityFederationCrudSaga.name),
+  })
+  private async handleIdentityFederationDeleted(event: IdentityFederationDeletedEvent): Promise<void> {
+    try {
+      this.logger.log(`Saga IdentityFederation Deleted completada: ${event.aggregateId}`);
+    } catch (error: any) {
+      this.handleSagaError(error, event);
+    }
+  }
 
   // Método para manejo de errores en sagas
   private handleSagaError(error: Error, event: any) {

@@ -44,6 +44,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
 import { UserAuthGuard } from "../guards/userauthguard.guard";
+import { SystemAdminGuard } from "../../system-admin-policy/guards/system-admin.guard";
 
 import { DeleteResult } from "typeorm";
 import { Logger } from "@nestjs/common";
@@ -60,7 +61,7 @@ import { logger } from '@core/logs/logger';
 import { BadRequestException } from "@nestjs/common";
 
 @ApiTags("User Command")
-@UseGuards(UserAuthGuard)
+@UseGuards(UserAuthGuard, SystemAdminGuard)
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: "Autenticación requerida." })
 @Controller("users/command")

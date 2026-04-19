@@ -39,6 +39,11 @@ import {
 import { EventIdempotencyService } from '../messaging/event-idempotency.service';
 import { KafkaDeadLetterService } from '../messaging/kafka-dead-letter.service';
 
+//Logger - Codetrace
+import { LogExecutionTime } from 'src/common/logger/loggers.functions';
+import { LoggerClient } from 'src/common/logger/logger.client';
+import { logger } from '@core/logs/logger';
+
 @Injectable()
 export class KafkaEventSubscriber {
   private readonly logger = new Logger(KafkaEventSubscriber.name);
@@ -80,6 +85,21 @@ export class KafkaEventSubscriber {
     });
   }
 
+  @LogExecutionTime({
+    layer: 'event-subscriber',
+    callback: async (logData, client) => {
+      try {
+        logger.info('Codetrace event-subscriber event:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Error enviando traza de event-subscriber:', logData);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(KafkaEventSubscriber.name)
+      .get(KafkaEventSubscriber.name),
+  })
     async routeExternalEvent(message: any, metadata: any, options?: { ignoreIdempotency?: boolean; allowRetry?: boolean; replay?: boolean }) {
     try {
         const eventType = this.extractHeaderValue(metadata?.headers?.['event-type']);

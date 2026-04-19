@@ -62,6 +62,7 @@ import { SecurityMerchantLoggingInterceptor } from "../interceptors/securitymerc
 
 //Event-Sourcing dependencies
 import { EventStoreService } from "../shared/event-store/event-store.service";
+import { MerchantApprovalService } from "../services/merchant-approval.service";
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMerchantQueryService,
     SecurityMerchantCommandService,
+    MerchantApprovalService,
   
     //Repositories
     SecurityMerchantCommandRepository,
@@ -117,6 +119,7 @@ import { EventStoreService } from "../shared/event-store/event-store.service";
     EventStoreService,
     SecurityMerchantQueryService,
     SecurityMerchantCommandService,
+    MerchantApprovalService,
   
     //Repositories
     SecurityMerchantCommandRepository,

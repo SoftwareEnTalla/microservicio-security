@@ -56,7 +56,7 @@ import { SystemAdminPolicyDeletedEvent } from '../events/systemadminpolicydelete
 
 
 //Enfoque Event Sourcing
-import { CommandBus } from '@nestjs/cqrs';
+import { CommandBus, EventBus } from '@nestjs/cqrs';
 import { EventStoreService } from '../shared/event-store/event-store.service';
 import { KafkaEventPublisher } from '../shared/adapters/kafka-event-publisher';
 import { BaseEvent } from '../events/base.event';
@@ -78,6 +78,7 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
     private readonly commandBus: CommandBus,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
+    private readonly eventBus: EventBus,
     @Optional() @Inject('EVENT_SOURCING_CONFIG') 
     private readonly eventSourcingConfig: EventSourcingConfigOptions = EventSourcingHelper.getDefaultConfig()
   ) {
@@ -288,13 +289,15 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
     
     // Publicar evento solo si Event Sourcing está habilitado
     if (this.shouldPublishEvent()) {
-      this.eventPublisher.publish(new SystemAdminPolicyCreatedEvent(result.id, {
+      const __dualEvt1 = new SystemAdminPolicyCreatedEvent(result.id, {
         instance: result,
         metadata: {
           initiatedBy: result.creator,
           correlationId: result.id,
         },
-      }));
+      });
+      this.eventBus.publish(__dualEvt1);
+      this.eventPublisher.publish(__dualEvt1);
     }
     return result;
   }
@@ -333,13 +336,15 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
     
     // Publicar eventos solo si Event Sourcing está habilitado
     if (this.shouldPublishEvent()) {
-      this.eventPublisher.publishAll(result.map((el)=>new SystemAdminPolicyCreatedEvent(el.id, {
+      const __dualEvts2 = result.map((el)=>new SystemAdminPolicyCreatedEvent(el.id, {
         instance: el,
         metadata: {
           initiatedBy: el.creator,
           correlationId: el.id,
         },
-      })));
+      }));
+      __dualEvts2.forEach((ev: any) => this.eventBus.publish(ev));
+      this.eventPublisher.publishAll(__dualEvts2);
     }
     return result;
   }
@@ -375,13 +380,15 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
     
     if(instance && this.shouldPublishEvent()) {
       logger.info('Ready to publish or fire event SystemAdminPolicyUpdatedEvent on repository:', instance);
-      this.eventPublisher.publish(new SystemAdminPolicyUpdatedEvent(instance.id, {
+      const __dualEvt3 = new SystemAdminPolicyUpdatedEvent(instance.id, {
           instance: instance,
           metadata: {
             initiatedBy: instance.createdBy || 'system',
             correlationId: id,
           },
-        }));
+        });
+      this.eventBus.publish(__dualEvt3);
+      this.eventPublisher.publish(__dualEvt3);
     }   
     return instance;
   }
@@ -415,13 +422,15 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
         if (updatedEntity) {
           updatedEntities.push(updatedEntity);
           if (this.shouldPublishEvent()) {
-            this.eventPublisher.publish(new SystemAdminPolicyUpdatedEvent(updatedEntity.id, {
+            const __dualEvt4 = new SystemAdminPolicyUpdatedEvent(updatedEntity.id, {
                 instance: updatedEntity,
                 metadata: {
                   initiatedBy: updatedEntity.createdBy || 'system',
                   correlationId: entity.id,
                 },
-              }));
+              });
+            this.eventBus.publish(__dualEvt4);
+            this.eventPublisher.publish(__dualEvt4);
           }
         }
       }
@@ -460,13 +469,15 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
      
      if (this.shouldPublishEvent()) {
        logger.info('Ready to publish/fire SystemAdminPolicyDeletedEvent on repository:', result);
-       this.eventPublisher.publish(new SystemAdminPolicyDeletedEvent(id, {
+       const __dualEvt5 = new SystemAdminPolicyDeletedEvent(id, {
         instance: entity,
         metadata: {
           initiatedBy: entity.createdBy || 'system',
           correlationId: entity.id,
         },
-      }));
+      });
+       this.eventBus.publish(__dualEvt5);
+       this.eventPublisher.publish(__dualEvt5);
      }
      return result;
   }
@@ -497,7 +508,7 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
     
     if (this.shouldPublishEvent()) {
       logger.info('Ready to publish/fire SystemAdminPolicyDeletedEvent on repository:', result);
-      this.eventPublisher.publishAll(ids.map(async (id) => {
+      const __dualEvts6 = await Promise.all(ids.map(async (id) => {
           const entity = await this.systemadminpolicyRepository.findOne({ id });
           if(!entity){
             throw new NotFoundException(`No se encontro el id: ${id}`);
@@ -510,6 +521,8 @@ export class SystemAdminPolicyCommandRepository implements IEventHandler<BaseEve
             },
           });
         }));
+      __dualEvts6.forEach((ev: any) => this.eventBus.publish(ev));
+      this.eventPublisher.publishAll(__dualEvts6);
     }
     return result;
   }

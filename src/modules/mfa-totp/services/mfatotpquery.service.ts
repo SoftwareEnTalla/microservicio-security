@@ -411,9 +411,7 @@ export class MfaTotpQueryService implements OnModuleInit{
   })
   async findOne(where?: Record<string, any>): Promise<MfaTotpResponse<MfaTotp>> {
     try {
-      const entity = await this.repository.findOne({
-        where: where,
-      });
+      const entity = await this.repository.findOne(where);
 
       // Respuesta si el mfatotp no existe
       if (!entity)

@@ -33,6 +33,15 @@ import { BaseEvent } from './base.event';
 import { RbacAclCreatedEvent } from './rbacaclcreated.event';
 import { RbacAclUpdatedEvent } from './rbacaclupdated.event';
 import { RbacAclDeletedEvent } from './rbacacldeleted.event';
+import { RoleCreatedEvent } from './rolecreated.event';
+import { RoleUpdatedEvent } from './roleupdated.event';
+import { RoleDeactivatedEvent } from './roledeactivated.event';
+import { RoleDeletedEvent } from './roledeleted.event';
+import { PermissionAssignedToRoleEvent } from './permissionassignedtorole.event';
+import { PermissionRemovedFromRoleEvent } from './permissionremovedfromrole.event';
+import { UserRoleAssignedEvent } from './userroleassigned.event';
+import { UserRoleRevokedEvent } from './userrolerevoked.event';
+import { AuthenticatedUserAclResolvedEvent } from './authenticateduseraclresolved.event';
 
 export type RegisteredEventClass<T extends BaseEvent = BaseEvent> = new (
   aggregateId: string,
@@ -73,7 +82,15 @@ export const EVENT_DEFINITIONS: Record<string, RegisteredEventDefinition> = {
   'rbac-acl-created': createEventDefinition('rbac-acl-created', RbacAclCreatedEvent, EVENT_DEFINITION_OVERRIDES['rbac-acl-created']),
   'rbac-acl-updated': createEventDefinition('rbac-acl-updated', RbacAclUpdatedEvent, EVENT_DEFINITION_OVERRIDES['rbac-acl-updated']),
   'rbac-acl-deleted': createEventDefinition('rbac-acl-deleted', RbacAclDeletedEvent, EVENT_DEFINITION_OVERRIDES['rbac-acl-deleted']),
-
+  'role-created': createEventDefinition('role-created', RoleCreatedEvent, { version: '2.0.0' }),
+  'role-updated': createEventDefinition('role-updated', RoleUpdatedEvent, { version: '2.0.0' }),
+  'role-deactivated': createEventDefinition('role-deactivated', RoleDeactivatedEvent, { version: '2.0.0' }),
+  'role-deleted': createEventDefinition('role-deleted', RoleDeletedEvent, { version: '2.0.0' }),
+  'permission-assigned-to-role': createEventDefinition('permission-assigned-to-role', PermissionAssignedToRoleEvent, { version: '2.0.0' }),
+  'permission-removed-from-role': createEventDefinition('permission-removed-from-role', PermissionRemovedFromRoleEvent, { version: '2.0.0' }),
+  'user-role-assigned': createEventDefinition('user-role-assigned', UserRoleAssignedEvent, { version: '2.0.0' }),
+  'user-role-revoked': createEventDefinition('user-role-revoked', UserRoleRevokedEvent, { version: '2.0.0' }),
+  'authenticated-user-acl-resolved': createEventDefinition('authenticated-user-acl-resolved', AuthenticatedUserAclResolvedEvent, { version: '2.0.0' }),
 };
 
 export const EVENT_REGISTRY: Record<string, RegisteredEventClass> = Object.fromEntries(
