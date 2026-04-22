@@ -20,10 +20,6 @@ export class KafkaLoggerClient implements ILoggerClient {
   private connecting: Promise<void> | null = null;
   private readonly serviceName: string;
 
-  get isConnected(): boolean {
-    return this.connected;
-  }
-
   private constructor() {
     const brokers = (process.env.KAFKA_BROKERS || "kafka:9092")
       .split(",")

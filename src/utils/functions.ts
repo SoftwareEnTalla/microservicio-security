@@ -5,29 +5,24 @@ import { validateOrReject } from "class-validator";
 // Sobrecarga de la función
 export function generateCacheKey<Type>(
   prefijo: string,
-  id: string | object,
+  id: string,
   partialEntity: Partial<Type>
 ): string;
-export function generateCacheKey<Type>(prefijo: string, id: string | object): string;
+export function generateCacheKey<Type>(prefijo: string, id: string): string;
 
 // Implementación de la función
 export function generateCacheKey<Type>(
   prefijo: string,
-  id: string | object,
+  id: string,
   partialEntity?: Partial<Type>
 ): string {
-  // Serializar id: si es objeto, generar hash JSON; si es string, usar directo
-  const idKey = typeof id === "object" && id !== null
-    ? createHash("sha256").update(JSON.stringify(id)).digest("hex").substring(0, 16)
-    : String(id);
-
   if (partialEntity) {
     const hash = createHash("sha256")
       .update(JSON.stringify(partialEntity))
       .digest("hex");
-    return `${prefijo}:${idKey}:${hash}`;
+    return `${prefijo}:${id}:${hash}`;
   }
-  return `${prefijo}:${idKey}`;
+  return `${prefijo}:${id}`;
 }
 
 // Sobrecarga 1: Cuando se pasa la clase explícitamente

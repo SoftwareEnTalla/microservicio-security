@@ -65,3 +65,6 @@ ENV/
 # Temporary build artifacts
 .dcfix-*/
 .local-remotes/
+
+# Codegen checksums manifest (auto-generated)
+.codegen-checksums

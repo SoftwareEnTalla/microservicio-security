@@ -39,7 +39,6 @@ export interface LogExecutionTimeOptions {
 }
 
 export interface ILoggerClient {
-  isConnected: boolean;
   connect(): Promise<boolean>;
   send(data: HttpLoggerApiRest): Promise<boolean>;
   close(): Promise<boolean>;

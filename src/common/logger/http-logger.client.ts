@@ -187,13 +187,11 @@ export class HttpLoggerClient implements ILoggerClient {
 
   private validateLogData(data: HttpLoggerApiRest): void {
     if (!data?.endpoint) throw new Error("Endpoint es requerido");
-    // Acepta formato original (functionName, startTime, status)
-    // o formato DTO de codetrace (name, description, createdBy)
-    const isOriginalFormat = data?.body?.functionName;
-    const isDtoFormat = (data?.body as any)?.name && (data?.body as any)?.createdBy;
-    if (!isOriginalFormat && !isDtoFormat) {
-      throw new Error("Body debe tener functionName (formato original) o name+createdBy (formato DTO)");
-    }
+    if (!data?.body?.functionName)
+      throw new Error("functionName en body es requerido");
+    if (!data?.body?.startTime)
+      throw new Error("startTime en body es requerido");
+    if (!data?.body?.status) throw new Error("status en body es requerido");
   }
 
   private prepareRequestData(data: HttpLoggerApiRest): string | null {
@@ -286,6 +284,7 @@ export class HttpLoggerClient implements ILoggerClient {
    */
   async close(): Promise<boolean> {
     logger.log("Cerrando conexión HTTP Logger");
+    this.agent.destroy();
     this.status = HttpLoggerClientStatus.disconnected;
     return true;
   }

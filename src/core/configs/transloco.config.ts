@@ -1,5 +1,6 @@
 import { TranslocoConfig, AvailableLangs } from "@jsverse/transloco";
 
+// Extiende la interfaz original
 declare module "@jsverse/transloco" {
   interface TranslocoConfig {
     defaultStrategy?: "prefix" | "exclude";
@@ -7,37 +8,62 @@ declare module "@jsverse/transloco" {
   }
 }
 
-const AVAILABLE_LANGS = ["es", "en", "fr"] as const;
-type SupportedLang = (typeof AVAILABLE_LANGS)[number];
-
-const normalizeLang = (value?: string): SupportedLang => {
-  const raw = (value || "es").trim().replace(/['"]/g, "");
-  const base = raw.split(".")[0].split("@")[0].split(/[_-]/)[0].toLowerCase();
-  return (AVAILABLE_LANGS as readonly string[]).includes(base)
-    ? (base as SupportedLang)
-    : "es";
-};
-
-const defaultLang = normalizeLang(process.env.LANG);
-const fallbackLang = Array.from(new Set([defaultLang, "es", "en"])) as SupportedLang[];
-
 export const getTranslocoConfig = (): TranslocoConfig => ({
-  defaultLang,
+  /**
+   * Idioma predeterminado de la aplicación
+   */
+  defaultLang: "es",
+
+  /**
+   * Vuelve a renderizar los componentes cuando cambia el idioma
+   */
   reRenderOnLangChange: true,
+
+  /**
+   * Modo producción (deshabilita logs y advertencias)
+   */
   prodMode: process.env.NODE_ENV === "production",
-  fallbackLang,
+
+  /**
+   * Idioma de respaldo cuando falta una traducción
+   */
+  fallbackLang: ["es", "en"], // Puede ser string o array
+
+  /**
+   * Número de intentos fallidos antes de usar el idioma de respaldo
+   */
   failedRetries: 2,
-  availableLangs: [...AVAILABLE_LANGS] as unknown as AvailableLangs,
+
+  /**
+   * Idiomas disponibles en la aplicación
+   */
+  availableLangs: ["es", "en", "fr"] as AvailableLangs,
+
+  /**
+   * Configuración para aplanar las traducciones
+   */
   flatten: {
-    aot: process.env.NODE_ENV === "production",
+    aot: process.env.NODE_ENV === "production", // Aplanar para AOT
   },
+
+  /**
+   * Manejo de claves faltantes
+   */
   missingHandler: {
     logMissingKey: process.env.NODE_ENV !== "production",
     useFallbackTranslation: true,
     allowEmpty: false,
   },
+
+  /**
+   * Delimitadores para interpolación (ej: {{ key }})
+   */
   interpolation: ["{{", "}}"],
+
+  /**
+   * Configuración de alcances (scopes)
+   */
   scopes: {
-    keepCasing: true,
+    keepCasing: true, // Mantener mayúsculas/minúsculas en los scopes
   },
 });
