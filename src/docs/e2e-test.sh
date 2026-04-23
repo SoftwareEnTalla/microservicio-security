@@ -1059,6 +1059,22 @@ HTTP=$(extract_code "$RESP")
 assert_ok "Eliminar usuario" "$HTTP"
 
 # ═══════════════════════════════════════════════════════════════
+# Integración con catalog-service (sync + trazabilidad)
+# ═══════════════════════════════════════════════════════════════
+BASE_URL="${BASE_URL:-http://localhost:3015/api}"
+AUTH="${AUTH:-Bearer valid-token}"
+log_step(){ echo -e "\n${BLUE}═══ $1: $2 ═══${NC}"; }
+log_ok(){ echo -e "  ${GREEN}✔ $1${NC}"; PASS=$((PASS+1)); TOTAL=$((TOTAL+1)); }
+log_fail(){ echo -e "  ${RED}✘ $1${NC}"; FAIL=$((FAIL+1)); TOTAL=$((TOTAL+1)); }
+log_warn(){ echo -e "  ${YELLOW}⚠ $1${NC}"; }
+log_info(){ echo -e "  ${YELLOW}ℹ $1${NC}"; }
+extract_code(){ echo "$1" | tail -n1; }
+do_get(){ curl -s -w "\n%{http_code}" -X GET "$1" -H "Authorization: ${2:-$AUTH}" 2>/dev/null; }
+do_post(){ curl -s -w "\n%{http_code}" -X POST "$1" -H "Content-Type: application/json" -H "Authorization: ${3:-$AUTH}" -d "$2" 2>/dev/null; }
+source "$(dirname "$0")/../../../docs/e2e-catalog-sync.inc.sh"
+run_catalog_sync_tests || true
+
+# ═══════════════════════════════════════════════════════════════
 # Resumen
 # ═══════════════════════════════════════════════════════════════
 echo ""

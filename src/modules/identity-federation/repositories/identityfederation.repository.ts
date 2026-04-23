@@ -272,15 +272,19 @@ import { logger } from '@core/logs/logger';
       .registerClient(IdentityFederationRepository.name)
       .get(IdentityFederationRepository.name),
     })
-    async findOne(where?: Record<string, any>): Promise<IdentityFederation | null> {
-      const tmp: FindOptionsWhere<IdentityFederation> = where as FindOptionsWhere<IdentityFederation>;
-      logger.info('Ready to findOneBy IdentityFederation on repository with conditions:', tmp);
-      // Si 'where' es undefined o null, puedes manejarlo según tu lógica
-      if (!where) {
+        async findOne(options?: Record<string, any>): Promise<IdentityFederation | null> {
+      if (!options || Object.keys(options).length === 0) {
         logger.warn('No conditions provided for finding IdentityFederation.');
-        return null; // O maneja el caso como prefieras
+        return null;
       }
-      logger.info('Ready to findOneBy IdentityFederation on repository:',tmp);
+      // Soporta tanto 'where plano' como FindOneOptions ({ where, relations, order, select })
+      const isFindOneOptions = 'where' in options || 'relations' in options || 'order' in options || 'select' in options;
+      if (isFindOneOptions) {
+        logger.info('Ready to findOne (FindOneOptions) IdentityFederation:', options);
+        return this.repository.findOne(options as any);
+      }
+      const tmp: FindOptionsWhere<IdentityFederation> = options as FindOptionsWhere<IdentityFederation>;
+      logger.info('Ready to findOneBy IdentityFederation on repository:', tmp);
       return this.repository.findOneBy(tmp);
     }
 

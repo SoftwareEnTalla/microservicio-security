@@ -44,6 +44,8 @@ import { logger } from '@core/logs/logger';
 import { join } from "path";
 import { loadEnv, watchEnvChanges } from "@core/loaders/load-enviroments";
 
+import { AllExceptionsFilter } from "./filters/all-exception.filter";
+
 const envPath = join(process.cwd(), ".env");
 loadEnv(envPath);
 watchEnvChanges(envPath);
@@ -130,6 +132,7 @@ async function bootstrap() {
     const globalPrefix = "api";
     app.setGlobalPrefix(globalPrefix);
     
+    app.useGlobalFilters(new AllExceptionsFilter());
     const swaggerPath = setupSwagger(
       app,
       "api-docs",

@@ -6,8 +6,10 @@ services:
     env_file:
       - .env
     networks:
-      - entalla-net
-      - shared-net
+      entalla-net: {}
+      shared-net:
+        aliases:
+          - security-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-3000}/api-docs"]
       interval: 10s

@@ -29,7 +29,7 @@
  */
 
 
-import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Entity, TableInheritance, Column } from 'typeorm';
+import { BeforeInsert, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Entity, TableInheritance, Column } from 'typeorm';
 import { IsBoolean, IsDate, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Field, ObjectType } from "@nestjs/graphql";
@@ -108,6 +108,12 @@ export abstract class BaseEntity {
   }
 
   //Métodos públicos
+
+  @BeforeInsert()
+  _setDefaultCreatedBy(): void {
+    if (!this.createdBy) this.createdBy = 'system';
+  }
+
 
   // Métodos abstractos para extender las clases hijas
   abstract create(data: any): Promise<BaseEntity> ;

@@ -51,6 +51,27 @@ import { UserListQueryDto } from "../dtos/all-dto";
 
 import { logger } from '@core/logs/logger';
 
+
+/**
+ * Parseo tolerante del query param 'where':
+ *  - Si llega como ?where={JSON}, lo parsea a objeto.
+ *  - Si llega como query params planos (?isActive=true) descarta claves
+ *    reservadas de paginación y devuelve el resto como where plano.
+ *  - Nunca devuelve un objeto envuelto en { where: ... } (evita double-wrap).
+ */
+function parseWhereParam(all: Record<string, any> = {}): Record<string, any> {
+  if (!all || typeof all !== "object") return {};
+  const raw = (all as any).where;
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try { return JSON.parse(raw); } catch { /* fallthrough */ }
+  }
+  if (raw && typeof raw === "object") return raw as Record<string, any>;
+  const reserved = new Set(["where","page","size","sort","order","search","initDate","endDate","options"]);
+  const rest: Record<string, any> = {};
+  for (const k of Object.keys(all)) if (!reserved.has(k)) rest[k] = (all as any)[k];
+  return rest;
+}
+
 @ApiTags("User Query")
 @UseGuards(UserAuthGuard)
 @ApiBearerAuth()
@@ -96,35 +117,6 @@ export class UserQueryController {
       const users = await this.service.findAll(filters);
       logger.info("Retrieving all user");
       return users;
-    } catch (error) {
-      logger.error(error);
-      return Helper.throwCachedError(error);
-    }
-  }
-
-  @Get(":id")
-  @ApiOperation({ summary: "Get user by ID" })
-  @ApiResponse({ status: 200, type: UserResponse<User> })
-  @ApiResponse({ status: 404, description: "User not found" })
-  @ApiParam({ name: 'id', required: true, description: 'ID of the user to retrieve', type: String })
-  @LogExecutionTime({
-    layer: "controller",
-    callback: async (logData, client) => {
-      return await client.send(logData);
-    },
-    client: LoggerClient.getInstance()
-      .registerClient(UserQueryService.name)
-      .get(UserQueryService.name),
-  })
-  async findById(@Param("id") id: string): Promise<UserResponse<User>> {
-    try {
-      const user = await this.service.findById(id);
-      if (!user) {
-        throw new NotFoundException(
-          "User no encontrado para el id solicitado"
-        );
-      }
-      return user;
     } catch (error) {
       logger.error(error);
       return Helper.throwCachedError(error);
@@ -238,9 +230,10 @@ export class UserQueryController {
       .get(UserQueryService.name),
   })
   async findAndCount(
-    @Query() where: Record<string, any>={},
+    @Query() all: Record<string, any> = {},
   ): Promise<UsersResponse<User>> {
     try {
+      const where: Record<string, any> = parseWhereParam(all);
       const entities = await this.service.findAndCount(where);
 
       if (!entities) {
@@ -312,6 +305,35 @@ export class UserQueryController {
       return Helper.throwCachedError(error);
     }
   }
+  @Get(":id")
+  @ApiOperation({ summary: "Get user by ID" })
+  @ApiResponse({ status: 200, type: UserResponse<User> })
+  @ApiResponse({ status: 404, description: "User not found" })
+  @ApiParam({ name: 'id', required: true, description: 'ID of the user to retrieve', type: String })
+  @LogExecutionTime({
+    layer: "controller",
+    callback: async (logData, client) => {
+      return await client.send(logData);
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(UserQueryService.name)
+      .get(UserQueryService.name),
+  })
+  async findById(@Param("id") id: string): Promise<UserResponse<User>> {
+    try {
+      const user = await this.service.findById(id);
+      if (!user) {
+        throw new NotFoundException(
+          "User no encontrado para el id solicitado"
+        );
+      }
+      return user;
+    } catch (error) {
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
+  }
+
 }
 
 

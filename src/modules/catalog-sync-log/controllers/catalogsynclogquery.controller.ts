@@ -53,6 +53,27 @@ import { CatalogSyncLogDto } from "../dtos/all-dto";
 
 import { logger } from '@core/logs/logger';
 
+
+/**
+ * Parseo tolerante del query param 'where':
+ *  - Si llega como ?where={JSON}, lo parsea a objeto.
+ *  - Si llega como query params planos (?isActive=true) descarta claves
+ *    reservadas de paginación y devuelve el resto como where plano.
+ *  - Nunca devuelve un objeto envuelto en { where: ... } (evita double-wrap).
+ */
+function parseWhereParam(all: Record<string, any> = {}): Record<string, any> {
+  if (!all || typeof all !== "object") return {};
+  const raw = (all as any).where;
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try { return JSON.parse(raw); } catch { /* fallthrough */ }
+  }
+  if (raw && typeof raw === "object") return raw as Record<string, any>;
+  const reserved = new Set(["where","page","size","sort","order","search","initDate","endDate","options"]);
+  const rest: Record<string, any> = {};
+  for (const k of Object.keys(all)) if (!reserved.has(k)) rest[k] = (all as any)[k];
+  return rest;
+}
+
 @ApiTags("CatalogSyncLog Query")
 @UseGuards(CatalogSyncLogAuthGuard)
 @ApiBearerAuth()
@@ -97,35 +118,6 @@ export class CatalogSyncLogQueryController {
     }
   }
 
-  @Get(":id")
-  @ApiOperation({ summary: "Get catalogsynclog by ID" })
-  @ApiResponse({ status: 200, type: CatalogSyncLogResponse<CatalogSyncLog> })
-  @ApiResponse({ status: 404, description: "CatalogSyncLog not found" })
-  @ApiParam({ name: 'id', required: true, description: 'ID of the catalogsynclog to retrieve', type: String })
-  @LogExecutionTime({
-    layer: "controller",
-    callback: async (logData, client) => {
-      return await client.send(logData);
-    },
-    client: LoggerClient.getInstance()
-      .registerClient(CatalogSyncLogQueryService.name)
-      .get(CatalogSyncLogQueryService.name),
-  })
-  async findById(@Param("id") id: string): Promise<CatalogSyncLogResponse<CatalogSyncLog>> {
-    try {
-      const catalogsynclog = await this.service.findOne({ where: { id } });
-      if (!catalogsynclog) {
-        throw new NotFoundException(
-          "CatalogSyncLog no encontrado para el id solicitado"
-        );
-      }
-      return catalogsynclog;
-    } catch (error) {
-      logger.error(error);
-      return Helper.throwCachedError(error);
-    }
-  }
-
   @Get("field/:field") // Asegúrate de que el endpoint esté definido correctamente
   @ApiOperation({ summary: "Find catalogsynclog by specific field" })
   @ApiQuery({ name: "value", required: true, description: 'Value to search for', type: String }) // Documenta el parámetro de consulta
@@ -146,13 +138,10 @@ export class CatalogSyncLogQueryController {
     @Query() paginationArgs?: PaginationArgs
   ): Promise<CatalogSyncLogsResponse<CatalogSyncLog>> {
     try {
-      const entities = await this.service.findAndCount({
-        where: { [field]: value },
-        skip:
-          ((paginationArgs ? paginationArgs.page : 1) - 1) *
-          (paginationArgs ? paginationArgs.size : 25),
-        take: paginationArgs ? paginationArgs.size : 25,
-      });
+      const entities = await this.service.findAndCount(
+        { [field]: value },
+        paginationArgs
+      );
 
       if (!entities) {
         throw new NotFoundException(
@@ -258,7 +247,7 @@ export class CatalogSyncLogQueryController {
       .get(CatalogSyncLogQueryService.name),
   })
   async findAndCount(
-    @Query() where: Record<string, any>={},
+    @Query() all: Record<string, any> = {},
     @Query("page") page?: number,
     @Query("size") size?: number,
     @Query("sort") sort?: string,
@@ -277,10 +266,10 @@ export class CatalogSyncLogQueryController {
         initDate || undefined, // Puede ser undefined si no se proporciona
         endDate || undefined // Puede ser undefined si no se proporciona
       );
-      const entities = await this.service.findAndCount({
-        where: where,
-        paginationArgs: paginationArgs,
-      });
+      const entities = await this.service.findAndCount(
+        parseWhereParam(all),
+        paginationArgs
+      );
 
       if (!entities) {
         throw new NotFoundException(
@@ -308,12 +297,11 @@ export class CatalogSyncLogQueryController {
       .get(CatalogSyncLogQueryService.name),
   })
   async findOne(
-    @Query() where: Record<string, any>={}
+    @Query() all: Record<string, any> = {}
   ): Promise<CatalogSyncLogResponse<CatalogSyncLog>> {
     try {
-      const entity = await this.service.findOne({
-        where: where,
-      });
+      const where: Record<string, any> = parseWhereParam(all);
+      const entity = await this.service.findOne(where);
 
       if (!entity) {
         throw new NotFoundException("Entidad CatalogSyncLog no encontrada.");
@@ -339,12 +327,11 @@ export class CatalogSyncLogQueryController {
       .get(CatalogSyncLogQueryService.name),
   })
   async findOneOrFail(
-    @Query() where: Record<string, any>={}
+    @Query() all: Record<string, any> = {}
   ): Promise<CatalogSyncLogResponse<CatalogSyncLog> | Error> {
     try {
-      const entity = await this.service.findOne({
-        where: where,
-      });
+      const where: Record<string, any> = parseWhereParam(all);
+      const entity = await this.service.findOne(where);
 
       if (!entity) {
         return new NotFoundException("Entidad CatalogSyncLog no encontrada.");
@@ -355,6 +342,35 @@ export class CatalogSyncLogQueryController {
       return Helper.throwCachedError(error);
     }
   }
+  @Get(":id")
+  @ApiOperation({ summary: "Get catalogsynclog by ID" })
+  @ApiResponse({ status: 200, type: CatalogSyncLogResponse<CatalogSyncLog> })
+  @ApiResponse({ status: 404, description: "CatalogSyncLog not found" })
+  @ApiParam({ name: 'id', required: true, description: 'ID of the catalogsynclog to retrieve', type: String })
+  @LogExecutionTime({
+    layer: "controller",
+    callback: async (logData, client) => {
+      return await client.send(logData);
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(CatalogSyncLogQueryService.name)
+      .get(CatalogSyncLogQueryService.name),
+  })
+  async findById(@Param("id") id: string): Promise<CatalogSyncLogResponse<CatalogSyncLog>> {
+    try {
+      const catalogsynclog = await this.service.findOne({ where: { id } });
+      if (!catalogsynclog) {
+        throw new NotFoundException(
+          "CatalogSyncLog no encontrado para el id solicitado"
+        );
+      }
+      return catalogsynclog;
+    } catch (error) {
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
+  }
+
 }
 
 

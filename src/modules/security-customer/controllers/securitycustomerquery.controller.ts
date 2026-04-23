@@ -53,6 +53,27 @@ import { SecurityCustomerDto } from "../dtos/all-dto";
 
 import { logger } from '@core/logs/logger';
 
+
+/**
+ * Parseo tolerante del query param 'where':
+ *  - Si llega como ?where={JSON}, lo parsea a objeto.
+ *  - Si llega como query params planos (?isActive=true) descarta claves
+ *    reservadas de paginación y devuelve el resto como where plano.
+ *  - Nunca devuelve un objeto envuelto en { where: ... } (evita double-wrap).
+ */
+function parseWhereParam(all: Record<string, any> = {}): Record<string, any> {
+  if (!all || typeof all !== "object") return {};
+  const raw = (all as any).where;
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try { return JSON.parse(raw); } catch { /* fallthrough */ }
+  }
+  if (raw && typeof raw === "object") return raw as Record<string, any>;
+  const reserved = new Set(["where","page","size","sort","order","search","initDate","endDate","options"]);
+  const rest: Record<string, any> = {};
+  for (const k of Object.keys(all)) if (!reserved.has(k)) rest[k] = (all as any)[k];
+  return rest;
+}
+
 @ApiTags("SecurityCustomer Query")
 @UseGuards(SecurityCustomerAuthGuard)
 @ApiBearerAuth()
@@ -97,35 +118,6 @@ export class SecurityCustomerQueryController {
     }
   }
 
-  @Get(":id")
-  @ApiOperation({ summary: "Get securitycustomer by ID" })
-  @ApiResponse({ status: 200, type: SecurityCustomerResponse<SecurityCustomer> })
-  @ApiResponse({ status: 404, description: "SecurityCustomer not found" })
-  @ApiParam({ name: 'id', required: true, description: 'ID of the securitycustomer to retrieve', type: String })
-  @LogExecutionTime({
-    layer: "controller",
-    callback: async (logData, client) => {
-      return await client.send(logData);
-    },
-    client: LoggerClient.getInstance()
-      .registerClient(SecurityCustomerQueryService.name)
-      .get(SecurityCustomerQueryService.name),
-  })
-  async findById(@Param("id") id: string): Promise<SecurityCustomerResponse<SecurityCustomer>> {
-    try {
-      const securitycustomer = await this.service.findOne({ where: { id } });
-      if (!securitycustomer) {
-        throw new NotFoundException(
-          "SecurityCustomer no encontrado para el id solicitado"
-        );
-      }
-      return securitycustomer;
-    } catch (error) {
-      logger.error(error);
-      return Helper.throwCachedError(error);
-    }
-  }
-
   @Get("field/:field") // Asegúrate de que el endpoint esté definido correctamente
   @ApiOperation({ summary: "Find securitycustomer by specific field" })
   @ApiQuery({ name: "value", required: true, description: 'Value to search for', type: String }) // Documenta el parámetro de consulta
@@ -146,13 +138,10 @@ export class SecurityCustomerQueryController {
     @Query() paginationArgs?: PaginationArgs
   ): Promise<SecurityCustomersResponse<SecurityCustomer>> {
     try {
-      const entities = await this.service.findAndCount({
-        where: { [field]: value },
-        skip:
-          ((paginationArgs ? paginationArgs.page : 1) - 1) *
-          (paginationArgs ? paginationArgs.size : 25),
-        take: paginationArgs ? paginationArgs.size : 25,
-      });
+      const entities = await this.service.findAndCount(
+        { [field]: value },
+        paginationArgs
+      );
 
       if (!entities) {
         throw new NotFoundException(
@@ -258,7 +247,7 @@ export class SecurityCustomerQueryController {
       .get(SecurityCustomerQueryService.name),
   })
   async findAndCount(
-    @Query() where: Record<string, any>={},
+    @Query() all: Record<string, any> = {},
     @Query("page") page?: number,
     @Query("size") size?: number,
     @Query("sort") sort?: string,
@@ -277,10 +266,10 @@ export class SecurityCustomerQueryController {
         initDate || undefined, // Puede ser undefined si no se proporciona
         endDate || undefined // Puede ser undefined si no se proporciona
       );
-      const entities = await this.service.findAndCount({
-        where: where,
-        paginationArgs: paginationArgs,
-      });
+      const entities = await this.service.findAndCount(
+        parseWhereParam(all),
+        paginationArgs
+      );
 
       if (!entities) {
         throw new NotFoundException(
@@ -308,12 +297,11 @@ export class SecurityCustomerQueryController {
       .get(SecurityCustomerQueryService.name),
   })
   async findOne(
-    @Query() where: Record<string, any>={}
+    @Query() all: Record<string, any> = {}
   ): Promise<SecurityCustomerResponse<SecurityCustomer>> {
     try {
-      const entity = await this.service.findOne({
-        where: where,
-      });
+      const where: Record<string, any> = parseWhereParam(all);
+      const entity = await this.service.findOne(where);
 
       if (!entity) {
         throw new NotFoundException("Entidad SecurityCustomer no encontrada.");
@@ -339,12 +327,11 @@ export class SecurityCustomerQueryController {
       .get(SecurityCustomerQueryService.name),
   })
   async findOneOrFail(
-    @Query() where: Record<string, any>={}
+    @Query() all: Record<string, any> = {}
   ): Promise<SecurityCustomerResponse<SecurityCustomer> | Error> {
     try {
-      const entity = await this.service.findOne({
-        where: where,
-      });
+      const where: Record<string, any> = parseWhereParam(all);
+      const entity = await this.service.findOne(where);
 
       if (!entity) {
         return new NotFoundException("Entidad SecurityCustomer no encontrada.");
@@ -355,6 +342,35 @@ export class SecurityCustomerQueryController {
       return Helper.throwCachedError(error);
     }
   }
+  @Get(":id")
+  @ApiOperation({ summary: "Get securitycustomer by ID" })
+  @ApiResponse({ status: 200, type: SecurityCustomerResponse<SecurityCustomer> })
+  @ApiResponse({ status: 404, description: "SecurityCustomer not found" })
+  @ApiParam({ name: 'id', required: true, description: 'ID of the securitycustomer to retrieve', type: String })
+  @LogExecutionTime({
+    layer: "controller",
+    callback: async (logData, client) => {
+      return await client.send(logData);
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(SecurityCustomerQueryService.name)
+      .get(SecurityCustomerQueryService.name),
+  })
+  async findById(@Param("id") id: string): Promise<SecurityCustomerResponse<SecurityCustomer>> {
+    try {
+      const securitycustomer = await this.service.findOne({ where: { id } });
+      if (!securitycustomer) {
+        throw new NotFoundException(
+          "SecurityCustomer no encontrado para el id solicitado"
+        );
+      }
+      return securitycustomer;
+    } catch (error) {
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
+  }
+
 }
 
 

@@ -48,6 +48,7 @@ import { LoggingModule } from "./modules/security/modules/logger.module";
 import { ModuleRef } from "@nestjs/core";
 import { ServiceRegistry } from "@core/service-registry";
 import LoggerService, { logger } from "@core/logs/logger";
+import { CatalogSyncLogModule } from "./modules/catalog-sync-log/modules/catalogsynclog.module";
 import { AuthenticationModule } from "./modules/authentication/modules/authentication.module";
 import { AuthenticationCommandService } from "./modules/authentication/services/authenticationcommand.service";
 import { AuthenticationQueryService } from "./modules/authentication/services/authenticationquery.service";
@@ -87,6 +88,8 @@ import { UserProfileQueryService } from "./modules/user-profile/services/userpro
 import { UserModule } from "./modules/user/modules/user.module";
 import { UserCommandService } from "./modules/user/services/usercommand.service";
 import { UserQueryService } from "./modules/user/services/userquery.service";
+
+import { CatalogClientModule } from "./modules/catalog-client/catalog-client.module";
 
 /*
 //TODO unused for while dependencies
@@ -166,6 +169,8 @@ import LoggerService, { logger } from "@core/logs/logger";
     /**
      * Módulo Logger de la aplicación
      */
+        CatalogSyncLogModule,
+    CatalogClientModule,
     LoggingModule,
 
     // GraphQL solo si GRAPHQL_ENABLED=true

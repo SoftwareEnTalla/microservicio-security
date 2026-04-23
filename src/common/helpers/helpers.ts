@@ -74,14 +74,26 @@ export const Helper = {
     },
 
     throwCachedError(error: any) {
-        // HttpException
-        if (error.name === 'HttpException') {
-            throw new HttpException(error.message, error.status, error.options);
-        } else {
-            // Devolver error
-            throw new InternalServerErrorException(error);
-
+        // Re-lanzar HttpException tal cual (incluye subclases: BadRequest, NotFound, etc.)
+        if (error instanceof HttpException) {
+            throw error;
         }
+        // QueryFailedError (Postgres) -> mapear a 400/409 según código SQL
+        if (error && typeof error === 'object' && error.name === 'QueryFailedError') {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const { handlePostgresError } = require('../../errors/postgres-error-handler');
+                throw handlePostgresError(error);
+            } catch (mapped) {
+                if (mapped instanceof HttpException) throw mapped;
+            }
+        }
+        // Errores de dominio lanzados con `throw new Error('CODE_NNN: ...')` -> 400
+        if (error instanceof Error && /^[A-Z][A-Z0-9_]*_\d+:/.test(error.message || '')) {
+            throw new BadRequestException(error.message);
+        }
+        // Fallback
+        throw new InternalServerErrorException(error);
     },
 
     async waitObservableSubscription(

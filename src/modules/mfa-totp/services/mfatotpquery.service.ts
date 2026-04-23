@@ -229,13 +229,7 @@ export class MfaTotpQueryService implements OnModuleInit{
     paginationArgs?: PaginationArgs
   ): Promise<MfaTotpsResponse<MfaTotp>> {
     try {
-      const [entities, lenght] = await this.repository.findAndCount({
-        where: { [field]: value },
-        skip:
-          ((paginationArgs ? paginationArgs.page : 1) - 1) *
-          (paginationArgs ? paginationArgs.size : 25),
-        take: paginationArgs ? paginationArgs.size : 25,
-      });
+      const [entities, lenght] = await this.repository.findAndCount({ [field]: value });
 
       // Respuesta si el mfatotp no existe
       if (!entities)
@@ -359,9 +353,7 @@ export class MfaTotpQueryService implements OnModuleInit{
     paginationArgs?: PaginationArgs
   ): Promise<MfaTotpsResponse<MfaTotp>> {
     try {
-      const [entities, lenght] = await this.repository.findAndCount({
-        where: where,
-      });
+      const [entities, lenght] = await this.repository.findAndCount(where);
 
       // Respuesta si el mfatotp no existe
       if (!entities)
@@ -453,9 +445,7 @@ export class MfaTotpQueryService implements OnModuleInit{
     where?: Record<string, any>
   ): Promise<MfaTotpResponse<MfaTotp> | Error> {
     try {
-      const entity = await this.repository.findOne({
-        where: where,
-      });
+      const entity = await this.repository.findOne(where);
 
       // Respuesta si el mfatotp no existe
       if (!entity)
