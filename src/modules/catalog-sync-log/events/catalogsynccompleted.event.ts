@@ -27,11 +27,37 @@
  *
  *
  */
-export * from "./catalogsynclogdeleted.event"; 
-export * from "./catalogsynclogcreated.event";
-export * from "./catalogsynclogupdated.event";
-export * from "./catalogsynccompleted.event";
-export * from "./catalogsyncfailed.event";
-export * from "./event-registry";
-export * from "./base.event";
-export * from "./catalogsynclog-failed.event";
+
+
+
+import { CatalogSyncLog } from '../entities/catalog-sync-log.entity';
+import { BaseEvent, PayloadEvent } from './base.event'; 
+import { v4 as uuidv4 } from "uuid";
+
+export class CatalogSyncCompletedEvent extends BaseEvent {
+  constructor(
+    public readonly aggregateId: string,
+    public readonly payload: PayloadEvent<any|CatalogSyncLog>
+  ) {
+    super(aggregateId);
+  }
+
+  
+         // Método estático para construcción consistente del evento
+        static create(
+          instanceId: string,
+          instance: any|CatalogSyncLog,
+          userId: string,
+          correlationId?: string
+        ): CatalogSyncCompletedEvent {
+          return new CatalogSyncCompletedEvent(instanceId, {
+            instance: instance,
+            metadata: {
+              initiatedBy: userId,
+              correlationId:correlationId || uuidv4(),
+            },
+          });
+        }
+        
+
+}

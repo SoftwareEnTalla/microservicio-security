@@ -33,6 +33,8 @@ import { BaseEvent } from './base.event';
 import { CatalogSyncLogCreatedEvent } from './catalogsynclogcreated.event';
 import { CatalogSyncLogUpdatedEvent } from './catalogsynclogupdated.event';
 import { CatalogSyncLogDeletedEvent } from './catalogsynclogdeleted.event';
+import { CatalogSyncCompletedEvent } from './catalogsynccompleted.event';
+import { CatalogSyncFailedEvent } from './catalogsyncfailed.event';
 
 export type RegisteredEventClass<T extends BaseEvent = BaseEvent> = new (
   aggregateId: string,
@@ -82,7 +84,8 @@ export const EVENT_DEFINITIONS: Record<string, RegisteredEventDefinition> = {
   'catalog-sync-log-created': createEventDefinition('catalog-sync-log-created', CatalogSyncLogCreatedEvent, EVENT_DEFINITION_OVERRIDES['catalog-sync-log-created']),
   'catalog-sync-log-updated': createEventDefinition('catalog-sync-log-updated', CatalogSyncLogUpdatedEvent, EVENT_DEFINITION_OVERRIDES['catalog-sync-log-updated']),
   'catalog-sync-log-deleted': createEventDefinition('catalog-sync-log-deleted', CatalogSyncLogDeletedEvent, EVENT_DEFINITION_OVERRIDES['catalog-sync-log-deleted']),
-
+  'catalog-sync-completed': createEventDefinition('catalog-sync-completed', CatalogSyncCompletedEvent, EVENT_DEFINITION_OVERRIDES['catalog-sync-completed']),
+  'catalog-sync-failed': createEventDefinition('catalog-sync-failed', CatalogSyncFailedEvent, EVENT_DEFINITION_OVERRIDES['catalog-sync-failed']),
 };
 
 export const EVENT_REGISTRY: Record<string, RegisteredEventClass> = Object.fromEntries(

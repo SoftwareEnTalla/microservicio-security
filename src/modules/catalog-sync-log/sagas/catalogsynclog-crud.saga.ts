@@ -36,7 +36,8 @@ import {
   CatalogSyncLogCreatedEvent,
   CatalogSyncLogUpdatedEvent,
   CatalogSyncLogDeletedEvent,
-
+  CatalogSyncCompletedEvent,
+  CatalogSyncFailedEvent,
 } from '../events/exporting.event';
 import {
   SagaCatalogSyncLogFailedEvent
@@ -100,6 +101,27 @@ export class CatalogSyncLogCrudSaga {
     );
   };
 
+  @Saga()
+  onCatalogSyncCompleted = ($events: Observable<CatalogSyncCompletedEvent>) => {
+    return $events.pipe(
+      ofType(CatalogSyncCompletedEvent),
+      tap(event => {
+        this.logger.log(`Saga iniciada para evento de dominio CatalogSyncCompleted: ${event.aggregateId}`);
+      }),
+      map(() => null)
+    );
+  };
+
+  @Saga()
+  onCatalogSyncFailed = ($events: Observable<CatalogSyncFailedEvent>) => {
+    return $events.pipe(
+      ofType(CatalogSyncFailedEvent),
+      tap(event => {
+        this.logger.log(`Saga iniciada para evento de dominio CatalogSyncFailed: ${event.aggregateId}`);
+      }),
+      map(() => null)
+    );
+  };
 
   @LogExecutionTime({
     layer: 'saga',

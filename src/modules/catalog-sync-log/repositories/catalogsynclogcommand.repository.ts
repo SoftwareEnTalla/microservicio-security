@@ -53,7 +53,8 @@ import { IEventHandler, EventsHandler } from '@nestjs/cqrs';
 import { CatalogSyncLogCreatedEvent } from '../events/catalogsynclogcreated.event';
 import { CatalogSyncLogUpdatedEvent } from '../events/catalogsynclogupdated.event';
 import { CatalogSyncLogDeletedEvent } from '../events/catalogsynclogdeleted.event';
-
+import { CatalogSyncCompletedEvent } from "../events/catalogsynccompleted.event";
+import { CatalogSyncFailedEvent } from "../events/catalogsyncfailed.event";
 
 //Enfoque Event Sourcing
 import { CommandBus, EventBus } from '@nestjs/cqrs';
@@ -66,7 +67,7 @@ import { EventSourcingHelper } from '../shared/decorators/event-sourcing.helper'
 import { EventSourcingConfigOptions } from '../shared/decorators/event-sourcing.decorator';
 
 
-@EventsHandler(CatalogSyncLogCreatedEvent, CatalogSyncLogUpdatedEvent, CatalogSyncLogDeletedEvent)
+@EventsHandler(CatalogSyncLogCreatedEvent, CatalogSyncLogUpdatedEvent, CatalogSyncLogDeletedEvent, CatalogSyncCompletedEvent, CatalogSyncFailedEvent)
 @Injectable()
 export class CatalogSyncLogCommandRepository implements IEventHandler<BaseEvent>{
 
@@ -158,7 +159,10 @@ export class CatalogSyncLogCommandRepository implements IEventHandler<BaseEvent>
         return await this.onCatalogSyncLogUpdated(event);
       case 'CatalogSyncLogDeletedEvent':
         return await this.onCatalogSyncLogDeleted(event);
-
+      case 'CatalogSyncCompletedEvent':
+        return await this.onCatalogSyncCompleted(event);
+      case 'CatalogSyncFailedEvent':
+        return await this.onCatalogSyncFailed(event);
     }
     return false;
   }
@@ -252,6 +256,33 @@ export class CatalogSyncLogCommandRepository implements IEventHandler<BaseEvent>
     return await this.repository.delete(event.aggregateId);
   }
 
+  private async onCatalogSyncCompleted(event: CatalogSyncCompletedEvent) {
+    logger.info('Ready to handle onCatalogSyncCompleted event on repository:', event);
+    const payloadInstance = (event as any).payload?.instance;
+    if (payloadInstance) {
+      const projectedEntity = this.repository.create({
+        ...(payloadInstance as any),
+        id: event.aggregateId,
+        type: 'catalog-sync-log'
+      } as Partial<CatalogSyncLog>);
+      return await this.repository.save(projectedEntity as CatalogSyncLog);
+    }
+    return true;
+  }
+
+  private async onCatalogSyncFailed(event: CatalogSyncFailedEvent) {
+    logger.info('Ready to handle onCatalogSyncFailed event on repository:', event);
+    const payloadInstance = (event as any).payload?.instance;
+    if (payloadInstance) {
+      const projectedEntity = this.repository.create({
+        ...(payloadInstance as any),
+        id: event.aggregateId,
+        type: 'catalog-sync-log'
+      } as Partial<CatalogSyncLog>);
+      return await this.repository.save(projectedEntity as CatalogSyncLog);
+    }
+    return true;
+  }
 
 
   // ----------------------------

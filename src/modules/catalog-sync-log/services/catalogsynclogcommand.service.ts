@@ -51,7 +51,8 @@ import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 import { ModuleRef } from "@nestjs/core";
 import { CatalogSyncLogQueryService } from "./catalogsynclogquery.service";
 import { BaseEvent } from "../events/base.event";
-
+import { CatalogSyncCompletedEvent } from '../events/catalogsynccompleted.event';
+import { CatalogSyncFailedEvent } from '../events/catalogsyncfailed.event';
 
 @Injectable()
 export class CatalogSyncLogCommandService implements OnModuleInit {
