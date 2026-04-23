@@ -51,7 +51,8 @@ import { KafkaEventPublisher } from "../shared/adapters/kafka-event-publisher";
 import { ModuleRef } from "@nestjs/core";
 import { MfaTotpQueryService } from "./mfatotpquery.service";
 import { BaseEvent } from "../events/base.event";
-
+import { ActivationPinGeneratedEvent } from '../events/activationpingenerated.event';
+import { ActivationPinVerifiedEvent } from '../events/activationpinverified.event';
 
 @Injectable()
 export class MfaTotpCommandService implements OnModuleInit {

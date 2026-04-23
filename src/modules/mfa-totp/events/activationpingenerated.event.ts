@@ -27,11 +27,37 @@
  *
  *
  */
-export * from "./mfatotpdeleted.event"; 
-export * from "./mfatotpcreated.event";
-export * from "./mfatotpupdated.event";
-export * from "./activationpingenerated.event";
-export * from "./activationpinverified.event";
-export * from "./event-registry";
-export * from "./base.event";
-export * from "./mfatotp-failed.event";
+
+
+
+import { MfaTotp } from '../entities/mfa-totp.entity';
+import { BaseEvent, PayloadEvent } from './base.event'; 
+import { v4 as uuidv4 } from "uuid";
+
+export class ActivationPinGeneratedEvent extends BaseEvent {
+  constructor(
+    public readonly aggregateId: string,
+    public readonly payload: PayloadEvent<any|MfaTotp>
+  ) {
+    super(aggregateId);
+  }
+
+  
+         // Método estático para construcción consistente del evento
+        static create(
+          instanceId: string,
+          instance: any|MfaTotp,
+          userId: string,
+          correlationId?: string
+        ): ActivationPinGeneratedEvent {
+          return new ActivationPinGeneratedEvent(instanceId, {
+            instance: instance,
+            metadata: {
+              initiatedBy: userId,
+              correlationId:correlationId || uuidv4(),
+            },
+          });
+        }
+        
+
+}
