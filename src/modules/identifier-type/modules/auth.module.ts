@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { IdentifierTypeCommandController } from "../controllers/identifiertypecommand.controller";
 import { IdentifierTypeLoggingInterceptor } from "../interceptors/identifiertype.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { IdentifierTypeAuthGuard } from "../guards/identifiertypeauthguard.guard";
 
 @Module({
-  controllers: [IdentifierTypeCommandController],
   providers: [
     IdentifierTypeAuthGuard,
     IdentifierTypeLoggingInterceptor,

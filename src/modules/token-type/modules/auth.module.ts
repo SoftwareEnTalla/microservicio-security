@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { TokenTypeCommandController } from "../controllers/tokentypecommand.controller";
 import { TokenTypeLoggingInterceptor } from "../interceptors/tokentype.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { TokenTypeAuthGuard } from "../guards/tokentypeauthguard.guard";
 
 @Module({
-  controllers: [TokenTypeCommandController],
   providers: [
     TokenTypeAuthGuard,
     TokenTypeLoggingInterceptor,

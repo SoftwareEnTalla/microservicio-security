@@ -52,6 +52,6 @@ export class LoginGuard implements CanActivate {
 
   private validateToken(token: string): boolean {
     // Implementar lógica real de validación
-    return token === 'valid-token';
+    return !!token; // delegado a JwtAuthGuard global (APP_GUARD)
   }
 }

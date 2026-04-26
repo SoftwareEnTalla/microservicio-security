@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { SalesManagerCommandController } from "../controllers/salesmanagercommand.controller";
 import { SalesManagerLoggingInterceptor } from "../interceptors/salesmanager.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { SalesManagerAuthGuard } from "../guards/salesmanagerauthguard.guard";
 
 @Module({
-  controllers: [SalesManagerCommandController],
   providers: [
     SalesManagerAuthGuard,
     SalesManagerLoggingInterceptor,

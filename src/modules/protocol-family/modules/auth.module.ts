@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { ProtocolFamilyCommandController } from "../controllers/protocolfamilycommand.controller";
 import { ProtocolFamilyLoggingInterceptor } from "../interceptors/protocolfamily.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { ProtocolFamilyAuthGuard } from "../guards/protocolfamilyauthguard.guard";
 
 @Module({
-  controllers: [ProtocolFamilyCommandController],
   providers: [
     ProtocolFamilyAuthGuard,
     ProtocolFamilyLoggingInterceptor,

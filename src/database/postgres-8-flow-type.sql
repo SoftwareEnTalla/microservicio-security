@@ -5,7 +5,7 @@
 -- (regla seccion 4.9.6 de docs/help.md). CRUD CQRS completo.
 -- Idempotente: INSERT ... ON CONFLICT (code) DO UPDATE.
 -- ====================================================================
-INSERT INTO "flow_type_base_entity" ("code", "displayName", "description", "metadata", "createdBy", "active", "type")
+INSERT INTO "flow_type_base_entity" ("code", "displayName", "description", "metadata", "createdBy", "isActive", "type")
 VALUES
   ('PASSWORD', 'Password', '', '{}'::jsonb, 'system', TRUE, 'flowtype'),
   ('FEDERATED', 'Federated', '', '{}'::jsonb, 'system', TRUE, 'flowtype'),
@@ -13,5 +13,5 @@ VALUES
   ('LOGOUT', 'Logout', '', '{}'::jsonb, 'system', TRUE, 'flowtype')
 ON CONFLICT ("code") DO UPDATE SET
   "displayName"      = EXCLUDED."displayName",
-  "active"           = TRUE,
+  "isActive"           = TRUE,
   "modificationDate" = NOW();

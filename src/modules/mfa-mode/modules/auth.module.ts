@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { MfaModeCommandController } from "../controllers/mfamodecommand.controller";
 import { MfaModeLoggingInterceptor } from "../interceptors/mfamode.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { MfaModeAuthGuard } from "../guards/mfamodeauthguard.guard";
 
 @Module({
-  controllers: [MfaModeCommandController],
   providers: [
     MfaModeAuthGuard,
     MfaModeLoggingInterceptor,

@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { DeliveryModeCommandController } from "../controllers/deliverymodecommand.controller";
 import { DeliveryModeLoggingInterceptor } from "../interceptors/deliverymode.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { DeliveryModeAuthGuard } from "../guards/deliverymodeauthguard.guard";
 
 @Module({
-  controllers: [DeliveryModeCommandController],
   providers: [
     DeliveryModeAuthGuard,
     DeliveryModeLoggingInterceptor,

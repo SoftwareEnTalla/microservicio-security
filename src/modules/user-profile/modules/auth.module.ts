@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { UserProfileCommandController } from "../controllers/userprofilecommand.controller";
 import { UserProfileLoggingInterceptor } from "../interceptors/userprofile.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { UserProfileAuthGuard } from "../guards/userprofileauthguard.guard";
 
 @Module({
-  controllers: [UserProfileCommandController],
   providers: [
     UserProfileAuthGuard,
     UserProfileLoggingInterceptor,

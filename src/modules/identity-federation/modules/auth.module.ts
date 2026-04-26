@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { IdentityFederationCommandController } from "../controllers/identityfederationcommand.controller";
 import { IdentityFederationLoggingInterceptor } from "../interceptors/identityfederation.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { IdentityFederationAuthGuard } from "../guards/identityfederationauthguard.guard";
 
 @Module({
-  controllers: [IdentityFederationCommandController],
   providers: [
     IdentityFederationAuthGuard,
     IdentityFederationLoggingInterceptor,

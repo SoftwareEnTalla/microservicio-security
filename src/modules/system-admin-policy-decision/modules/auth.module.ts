@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { SystemAdminPolicyDecisionCommandController } from "../controllers/systemadminpolicydecisioncommand.controller";
 import { SystemAdminPolicyDecisionLoggingInterceptor } from "../interceptors/systemadminpolicydecision.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { SystemAdminPolicyDecisionAuthGuard } from "../guards/systemadminpolicydecisionauthguard.guard";
 
 @Module({
-  controllers: [SystemAdminPolicyDecisionCommandController],
   providers: [
     SystemAdminPolicyDecisionAuthGuard,
     SystemAdminPolicyDecisionLoggingInterceptor,

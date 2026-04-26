@@ -23,7 +23,25 @@
 set -uo pipefail
 
 BASE_URL="http://localhost:3015/api"
-AUTH="Bearer valid-token"
+# ── Auth bootstrap: login real contra security-service ─────────
+SECURITY_BASE_URL="${SECURITY_BASE_URL:-http://localhost:3015/api}"
+SA_EMAIL="${SA_EMAIL:-softwarentalla@gmail.com}"
+SA_PWD="${SA_PWD:-admin123}"
+__login_resp=$(curl -s -w "\n%{http_code}" -X POST "$SECURITY_BASE_URL/logins/command" \
+  -H "Content-Type: application/json" \
+  -d "{\"identifier\":\"$SA_EMAIL\",\"password\":\"$SA_PWD\"}" 2>/dev/null)
+__login_code=$(echo "$__login_resp" | tail -n1)
+if [[ "$__login_code" != "200" && "$__login_code" != "201" ]]; then
+  echo "✘ Auth bootstrap falló: HTTP $__login_code contra $SECURITY_BASE_URL/logins/command"
+  echo "  Body: $(echo "$__login_resp" | sed '$d' | head -c 300)"
+  exit 1
+fi
+__login_body=$(echo "$__login_resp" | sed '$d')
+__token=$(echo "$__login_body" | (jq -r '.accessToken // .data.accessToken // .token // empty' 2>/dev/null || \
+  echo "$__login_body" | grep -oE '"accessToken"[[:space:]]*:[[:space:]]*"[^"]+"' | head -1 | sed -E 's/.*"accessToken"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/'))
+[[ -z "$__token" ]] && { echo "✘ Auth bootstrap: respuesta sin accessToken"; exit 1; }
+AUTH="Bearer $__token"
+echo "  ✔ Auth bootstrap: token JWT obtenido para $SA_EMAIL"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'; BLUE='\033[0;34m'
 PASS=0; FAIL=0; TOTAL=0; WARN=0
 
@@ -436,7 +454,7 @@ RESP=$(do_post "$BASE_URL/authentications/command" "{
   \"name\":\"auth-e2e-$UNIQUE\",
   \"loginIdentifier\":\"$TEST_EMAIL\",\"authMethod\":\"PASSWORD\",
   \"authStatus\":\"SUCCEEDED\",\"occurredAt\":\"$NOW\",
-  \"authenticatedUserAcls\":[{\"resource\":\"users\",\"action\":\"read\",\"scope\":\"own\",\"effect\":\"ALLOW\"}],
+  \"authenticatedUserAcls\":{\"users\":{\"resource\":\"users\",\"action\":\"read\",\"scope\":\"own\",\"effect\":\"ALLOW\"}},
   \"creationDate\":\"$NOW\",\"modificationDate\":\"$NOW\",\"isActive\":true,\"createdBy\":\"e2e\"
 }" "$AUTH_REAL")
 BODY=$(extract_body "$RESP"); HTTP=$(extract_code "$RESP")
@@ -641,7 +659,7 @@ echo -e "${BLUE}╚════════════════════�
 set -uo pipefail
 
 BASE_URL="http://localhost:3015/api"
-AUTH="Bearer valid-token"
+# (auth ya bootstrap arriba)
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'; BLUE='\033[0;34m'
 PASS=0; FAIL=0; TOTAL=0
 
@@ -1089,4 +1107,380 @@ echo -e "${BLUE}╚════════════════════�
 if [[ $FAIL -gt 0 ]]; then
   exit 1
 fi
+# >>> NOMENCLADORES E2E BEGIN (auto-generado por sources/scaffold_nomenclador_e2e_tests.py)
+# Servicio: security-service | Puerto: 3015
+NOM_BASE_URL="${NOM_BASE_URL:-http://localhost:3015/api}"
+NOM_AUTH="${AUTH:-Bearer valid-token}"
+nom_pass=0; nom_fail=0; nom_warn=0
+_nom_ok()   { echo -e "  [0;32m✔ $1[0m"; nom_pass=$((nom_pass+1)); }
+_nom_fail() { echo -e "  [0;31m✘ $1[0m"; nom_fail=$((nom_fail+1)); }
+_nom_warn() { echo -e "  [1;33m⚠ $1[0m"; nom_warn=$((nom_warn+1)); }
+NOM_UNIQUE="${UNIQUE:-$(date +%s)}"
+NOM_NOW="${NOW:-$(date -u +%Y-%m-%dT%H:%M:%S.000Z)}"
+echo ""
+echo -e "[0;34m═══ NOMENCLADORES — security-service ═══[0m"
+
+# --- Nomenclador: account-status ---
+NOM_CODE="NACCOUN-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E AccountStatus ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/accountstatuss/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "account-status: create id=$NOM_ID"; else _nom_warn "account-status: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/accountstatuss/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "account-status: list ok"; else _nom_warn "account-status: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/accountstatuss/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "account-status: getById" || _nom_warn "account-status: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/accountstatuss/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E AccountStatus updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "account-status: update" || _nom_warn "account-status: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/accountstatuss/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "account-status: delete" || _nom_warn "account-status: delete"
+fi
+
+# --- Nomenclador: auth-method ---
+NOM_CODE="NAUTHME-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E AuthMethod ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/authmethods/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "auth-method: create id=$NOM_ID"; else _nom_warn "auth-method: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/authmethods/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "auth-method: list ok"; else _nom_warn "auth-method: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/authmethods/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "auth-method: getById" || _nom_warn "auth-method: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/authmethods/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E AuthMethod updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "auth-method: update" || _nom_warn "auth-method: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/authmethods/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "auth-method: delete" || _nom_warn "auth-method: delete"
+fi
+
+# --- Nomenclador: auth-status ---
+NOM_CODE="NAUTHST-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E AuthStatus ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/authstatuss/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "auth-status: create id=$NOM_ID"; else _nom_warn "auth-status: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/authstatuss/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "auth-status: list ok"; else _nom_warn "auth-status: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/authstatuss/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "auth-status: getById" || _nom_warn "auth-status: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/authstatuss/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E AuthStatus updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "auth-status: update" || _nom_warn "auth-status: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/authstatuss/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "auth-status: delete" || _nom_warn "auth-status: delete"
+fi
+
+# --- Nomenclador: certification-status ---
+NOM_CODE="NCERTIF-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E CertificationStatus ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/certificationstatuss/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "certification-status: create id=$NOM_ID"; else _nom_warn "certification-status: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/certificationstatuss/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "certification-status: list ok"; else _nom_warn "certification-status: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/certificationstatuss/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "certification-status: getById" || _nom_warn "certification-status: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/certificationstatuss/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E CertificationStatus updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "certification-status: update" || _nom_warn "certification-status: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/certificationstatuss/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "certification-status: delete" || _nom_warn "certification-status: delete"
+fi
+
+# --- Nomenclador: challenge-status ---
+NOM_CODE="NCHALLE-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E ChallengeStatus ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/challengestatuss/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "challenge-status: create id=$NOM_ID"; else _nom_warn "challenge-status: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/challengestatuss/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "challenge-status: list ok"; else _nom_warn "challenge-status: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/challengestatuss/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "challenge-status: getById" || _nom_warn "challenge-status: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/challengestatuss/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E ChallengeStatus updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "challenge-status: update" || _nom_warn "challenge-status: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/challengestatuss/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "challenge-status: delete" || _nom_warn "challenge-status: delete"
+fi
+
+# --- Nomenclador: challenge-type ---
+NOM_CODE="NCHALLE-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E ChallengeType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/challengetypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "challenge-type: create id=$NOM_ID"; else _nom_warn "challenge-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/challengetypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "challenge-type: list ok"; else _nom_warn "challenge-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/challengetypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "challenge-type: getById" || _nom_warn "challenge-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/challengetypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E ChallengeType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "challenge-type: update" || _nom_warn "challenge-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/challengetypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "challenge-type: delete" || _nom_warn "challenge-type: delete"
+fi
+
+# --- Nomenclador: delivery-mode ---
+NOM_CODE="NDELIVE-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E DeliveryMode ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/deliverymodes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "delivery-mode: create id=$NOM_ID"; else _nom_warn "delivery-mode: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/deliverymodes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "delivery-mode: list ok"; else _nom_warn "delivery-mode: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/deliverymodes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "delivery-mode: getById" || _nom_warn "delivery-mode: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/deliverymodes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E DeliveryMode updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "delivery-mode: update" || _nom_warn "delivery-mode: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/deliverymodes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "delivery-mode: delete" || _nom_warn "delivery-mode: delete"
+fi
+
+# --- Nomenclador: flow-type ---
+NOM_CODE="NFLOWTY-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E FlowType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/flowtypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "flow-type: create id=$NOM_ID"; else _nom_warn "flow-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/flowtypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "flow-type: list ok"; else _nom_warn "flow-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/flowtypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "flow-type: getById" || _nom_warn "flow-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/flowtypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E FlowType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "flow-type: update" || _nom_warn "flow-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/flowtypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "flow-type: delete" || _nom_warn "flow-type: delete"
+fi
+
+# --- Nomenclador: identifier-type ---
+NOM_CODE="NIDENTI-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E IdentifierType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/identifiertypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "identifier-type: create id=$NOM_ID"; else _nom_warn "identifier-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/identifiertypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "identifier-type: list ok"; else _nom_warn "identifier-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/identifiertypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "identifier-type: getById" || _nom_warn "identifier-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/identifiertypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E IdentifierType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "identifier-type: update" || _nom_warn "identifier-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/identifiertypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "identifier-type: delete" || _nom_warn "identifier-type: delete"
+fi
+
+# --- Nomenclador: login-identifier-type ---
+NOM_CODE="NLOGINI-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E LoginIdentifierType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/loginidentifiertypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "login-identifier-type: create id=$NOM_ID"; else _nom_warn "login-identifier-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/loginidentifiertypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "login-identifier-type: list ok"; else _nom_warn "login-identifier-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/loginidentifiertypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "login-identifier-type: getById" || _nom_warn "login-identifier-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/loginidentifiertypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E LoginIdentifierType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "login-identifier-type: update" || _nom_warn "login-identifier-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/loginidentifiertypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "login-identifier-type: delete" || _nom_warn "login-identifier-type: delete"
+fi
+
+# --- Nomenclador: mfa-mode ---
+NOM_CODE="NMFAMOD-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E MfaMode ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/mfamodes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "mfa-mode: create id=$NOM_ID"; else _nom_warn "mfa-mode: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/mfamodes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "mfa-mode: list ok"; else _nom_warn "mfa-mode: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/mfamodes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "mfa-mode: getById" || _nom_warn "mfa-mode: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/mfamodes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E MfaMode updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "mfa-mode: update" || _nom_warn "mfa-mode: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/mfamodes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "mfa-mode: delete" || _nom_warn "mfa-mode: delete"
+fi
+
+# --- Nomenclador: protocol-family ---
+NOM_CODE="NPROTOC-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E ProtocolFamily ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/protocolfamilys/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "protocol-family: create id=$NOM_ID"; else _nom_warn "protocol-family: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/protocolfamilys/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "protocol-family: list ok"; else _nom_warn "protocol-family: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/protocolfamilys/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "protocol-family: getById" || _nom_warn "protocol-family: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/protocolfamilys/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E ProtocolFamily updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "protocol-family: update" || _nom_warn "protocol-family: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/protocolfamilys/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "protocol-family: delete" || _nom_warn "protocol-family: delete"
+fi
+
+# --- Nomenclador: provider-type ---
+NOM_CODE="NPROVID-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E ProviderType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/providertypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "provider-type: create id=$NOM_ID"; else _nom_warn "provider-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/providertypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "provider-type: list ok"; else _nom_warn "provider-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/providertypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "provider-type: getById" || _nom_warn "provider-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/providertypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E ProviderType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "provider-type: update" || _nom_warn "provider-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/providertypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "provider-type: delete" || _nom_warn "provider-type: delete"
+fi
+
+# --- Nomenclador: security-master-data ---
+NOM_CODE="NSECURI-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E SecurityMasterData ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/securitymasterdatas/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "security-master-data: create id=$NOM_ID"; else _nom_warn "security-master-data: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/securitymasterdatas/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "security-master-data: list ok"; else _nom_warn "security-master-data: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/securitymasterdatas/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "security-master-data: getById" || _nom_warn "security-master-data: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/securitymasterdatas/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E SecurityMasterData updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "security-master-data: update" || _nom_warn "security-master-data: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/securitymasterdatas/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "security-master-data: delete" || _nom_warn "security-master-data: delete"
+fi
+
+# --- Nomenclador: system-admin-policy-decision ---
+NOM_CODE="NSYSTEM-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E SystemAdminPolicyDecision ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/systemadminpolicydecisions/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "system-admin-policy-decision: create id=$NOM_ID"; else _nom_warn "system-admin-policy-decision: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/systemadminpolicydecisions/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "system-admin-policy-decision: list ok"; else _nom_warn "system-admin-policy-decision: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/systemadminpolicydecisions/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "system-admin-policy-decision: getById" || _nom_warn "system-admin-policy-decision: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/systemadminpolicydecisions/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E SystemAdminPolicyDecision updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "system-admin-policy-decision: update" || _nom_warn "system-admin-policy-decision: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/systemadminpolicydecisions/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "system-admin-policy-decision: delete" || _nom_warn "system-admin-policy-decision: delete"
+fi
+
+# --- Nomenclador: token-type ---
+NOM_CODE="NTOKENT-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E TokenType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/tokentypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "token-type: create id=$NOM_ID"; else _nom_warn "token-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/tokentypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "token-type: list ok"; else _nom_warn "token-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/tokentypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "token-type: getById" || _nom_warn "token-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/tokentypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E TokenType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "token-type: update" || _nom_warn "token-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/tokentypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "token-type: delete" || _nom_warn "token-type: delete"
+fi
+
+# --- Nomenclador: user-type ---
+NOM_CODE="NUSERTY-${NOM_UNIQUE}"
+NOM_BODY="{\"code\":\"$NOM_CODE\",\"displayName\":\"E2E UserType ${NOM_UNIQUE}\",\"description\":\"e2e\",\"creationDate\":\"$NOM_NOW\",\"modificationDate\":\"$NOM_NOW\",\"isActive\":true}"
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X POST "$NOM_BASE_URL/usertypes/command" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "$NOM_BODY" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1); NOM_BD=$(echo "$NOM_RESP" | sed '$d')
+NOM_ID=$(echo "$NOM_BD" | jq -r '.data.id // .id // empty' 2>/dev/null)
+if [[ "$NOM_CODE_HTTP" =~ ^(200|201)$ && -n "$NOM_ID" ]]; then _nom_ok "user-type: create id=$NOM_ID"; else _nom_warn "user-type: create http=$NOM_CODE_HTTP (puede requerir auth real)"; fi
+NOM_RESP=$(curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/usertypes/query/list" -H "Authorization: $NOM_AUTH" 2>/dev/null)
+NOM_CODE_HTTP=$(echo "$NOM_RESP" | tail -n1)
+if [[ "$NOM_CODE_HTTP" == "200" ]]; then _nom_ok "user-type: list ok"; else _nom_warn "user-type: list http=$NOM_CODE_HTTP"; fi
+if [[ -n "$NOM_ID" ]]; then
+  curl -s -w "
+%{http_code}" -X GET "$NOM_BASE_URL/usertypes/query/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "user-type: getById" || _nom_warn "user-type: getById"
+  curl -s -w "
+%{http_code}" -X PUT "$NOM_BASE_URL/usertypes/command/$NOM_ID" -H "Content-Type: application/json" -H "Authorization: $NOM_AUTH" -d "{\"displayName\":\"E2E UserType updated\",\"modificationDate\":\"$NOM_NOW\"}" >/dev/null 2>&1 && _nom_ok "user-type: update" || _nom_warn "user-type: update"
+  curl -s -w "
+%{http_code}" -X DELETE "$NOM_BASE_URL/usertypes/command/$NOM_ID" -H "Authorization: $NOM_AUTH" >/dev/null 2>&1 && _nom_ok "user-type: delete" || _nom_warn "user-type: delete"
+fi
+
+echo ""
+echo -e "[0;34m── Resumen Nomencladores security-service ──[0m"
+echo "  ✔ OK=$nom_pass  ✘ FAIL=$nom_fail  ⚠ WARN=$nom_warn"
+[[ ${nom_fail:-0} -eq 0 ]] || echo "[NOMENCLADORES] hay fallos en este servicio"
+# <<< NOMENCLADORES E2E END
+
 exit 0

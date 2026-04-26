@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { FlowTypeCommandController } from "../controllers/flowtypecommand.controller";
 import { FlowTypeLoggingInterceptor } from "../interceptors/flowtype.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { FlowTypeAuthGuard } from "../guards/flowtypeauthguard.guard";
 
 @Module({
-  controllers: [FlowTypeCommandController],
   providers: [
     FlowTypeAuthGuard,
     FlowTypeLoggingInterceptor,

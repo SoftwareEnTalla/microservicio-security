@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { ChallengeStatusCommandController } from "../controllers/challengestatuscommand.controller";
 import { ChallengeStatusLoggingInterceptor } from "../interceptors/challengestatus.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { ChallengeStatusAuthGuard } from "../guards/challengestatusauthguard.guard";
 
 @Module({
-  controllers: [ChallengeStatusCommandController],
   providers: [
     ChallengeStatusAuthGuard,
     ChallengeStatusLoggingInterceptor,

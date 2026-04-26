@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { AccountStatusCommandController } from "../controllers/accountstatuscommand.controller";
 import { AccountStatusLoggingInterceptor } from "../interceptors/accountstatus.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { AccountStatusAuthGuard } from "../guards/accountstatusauthguard.guard";
 
 @Module({
-  controllers: [AccountStatusCommandController],
   providers: [
     AccountStatusAuthGuard,
     AccountStatusLoggingInterceptor,

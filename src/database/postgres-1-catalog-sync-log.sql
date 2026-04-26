@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS "catalog_sync_log_base_entity" (
   "creationDate"      timestamp NOT NULL DEFAULT NOW(),
   "modificationDate"  timestamp NOT NULL DEFAULT NOW(),
   "createdBy"         varchar(100) NOT NULL DEFAULT 'catalog-sync-service',
-  "active"            boolean NOT NULL DEFAULT TRUE,
+  "isActive"            boolean NOT NULL DEFAULT TRUE,
   "name"              varchar(255),
   "description"       varchar(500),
   "categoryCode"      varchar(80) NOT NULL,

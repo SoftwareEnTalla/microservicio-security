@@ -6,8 +6,6 @@ postgres-5-provider-type.sql
 postgres-6-protocol-family.sql
 postgres-7-login-identifier-type.sql
 postgres-8-flow-type.sql
-postgres-9-auth-method-2.sql
-postgres-10-auth-status-2.sql
 postgres-11-mfa-mode.sql
 postgres-12-challenge-status.sql
 postgres-13-challenge-type.sql

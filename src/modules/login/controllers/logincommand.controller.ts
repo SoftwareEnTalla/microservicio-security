@@ -36,6 +36,7 @@ import { Login } from "../entities/login.entity";
 import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
 import { LoginAuthenticateWithPasswordDto, LoginStartFederatedLoginDto, LoginRefreshSessionDto, LoginLogoutDto, LoginFederatedCallbackDto } from "../dtos/all-dto";
 import { LoginAuthGuard } from "../guards/loginauthguard.guard";
+import { Public } from "src/common/horizontal/public.decorator";
 import { Helper } from "src/common/helpers/helpers";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { LoggerClient } from "src/common/logger/logger.client";
@@ -48,6 +49,7 @@ export class LoginCommandController {
   @ApiOperation({ summary: "Autenticar localmente con identificador y contraseña" })
   @ApiBody({ type: LoginAuthenticateWithPasswordDto })
   @ApiResponse({ status: 200, type: LoginResponse<Login> })
+  @Public()
   @Post()
   @LogExecutionTime({
     layer: "controller",
@@ -78,6 +80,7 @@ export class LoginCommandController {
   @ApiOperation({ summary: "Iniciar autenticación con proveedor externo" })
   @ApiBody({ type: LoginStartFederatedLoginDto })
   @ApiResponse({ status: 200, type: FederatedLoginStartResponse })
+  @Public()
   @Post("federated/start")
   @LogExecutionTime({
     layer: "controller",
@@ -105,6 +108,7 @@ export class LoginCommandController {
   @ApiOperation({ summary: "Finalizar autenticación federada tras callback del IdP" })
   @ApiBody({ type: LoginFederatedCallbackDto })
   @ApiResponse({ status: 200, type: LoginResponse<Login> })
+  @Public()
   @Post("federated/callback")
   async finalizeFederatedLogin(@Body() payload: LoginFederatedCallbackDto): Promise<LoginResponse<Login>> {
     try {

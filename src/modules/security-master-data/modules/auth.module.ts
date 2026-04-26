@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { SecurityMasterDataCommandController } from "../controllers/securitymasterdatacommand.controller";
 import { SecurityMasterDataLoggingInterceptor } from "../interceptors/securitymasterdata.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { SecurityMasterDataAuthGuard } from "../guards/securitymasterdataauthguard.guard";
 
 @Module({
-  controllers: [SecurityMasterDataCommandController],
   providers: [
     SecurityMasterDataAuthGuard,
     SecurityMasterDataLoggingInterceptor,

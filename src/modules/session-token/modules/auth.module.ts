@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { SessionTokenCommandController } from "../controllers/sessiontokencommand.controller";
 import { SessionTokenLoggingInterceptor } from "../interceptors/sessiontoken.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { SessionTokenAuthGuard } from "../guards/sessiontokenauthguard.guard";
 
 @Module({
-  controllers: [SessionTokenCommandController],
   providers: [
     SessionTokenAuthGuard,
     SessionTokenLoggingInterceptor,

@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { RbacAclCommandController } from "../controllers/rbacaclcommand.controller";
 import { RbacAclLoggingInterceptor } from "../interceptors/rbacacl.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { RbacAclAuthGuard } from "../guards/rbacaclauthguard.guard";
 
 @Module({
-  controllers: [RbacAclCommandController],
   providers: [
     RbacAclAuthGuard,
     RbacAclLoggingInterceptor,

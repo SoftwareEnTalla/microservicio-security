@@ -32,6 +32,7 @@ import { BadRequestException, ForbiddenException, Injectable, UnauthorizedExcept
 import { InjectRepository } from "@nestjs/typeorm";
 import { EventBus } from "@nestjs/cqrs";
 import { createHash, randomInt, randomUUID } from "crypto";
+import * as jwt from "jsonwebtoken";
 import { Repository } from "typeorm";
 import { Login } from "../entities/login.entity";
 import { LoginResponse, FederatedLoginStartResponse, LogoutResponse } from "../types/login.types";
@@ -131,7 +132,7 @@ export class LoginService {
     const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
     const sessionCode = this.generateOpaqueToken("session");
     const refreshToken = this.generateOpaqueToken("refresh");
-    const accessToken = this.generateOpaqueToken("access");
+    const accessToken = this.signAccessJwt(user.id, identifier);
 
     const sessionToken = new SessionToken();
     Object.assign(sessionToken, {
@@ -309,7 +310,7 @@ export class LoginService {
     const issuedAt = new Date();
     const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
     const rotatedRefreshToken = this.generateOpaqueToken("refresh");
-    const accessToken = this.generateOpaqueToken("access");
+    const accessToken = this.signAccessJwt(persistedSession.userId, persistedSession.sessionCode);
 
     await this.sessionTokenRepository.update(persistedSession.id, {
       tokenId: this.sha256(rotatedRefreshToken),
@@ -565,6 +566,23 @@ export class LoginService {
     return `${prefix}_${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}`;
   }
 
+  private signAccessJwt(userId: string, identifier?: string): string {
+    const secret = process.env.JWT_SECRET || "mysecretkey";
+    const expiresIn = parseInt(process.env.JWT_EXPIRES_IN_SECONDS || "604800", 10); // 7d default
+    const payload: Record<string, unknown> = {
+      sub: String(userId),
+      identifier: identifier || "",
+      type: "access",
+    };
+    const options: jwt.SignOptions = {
+      algorithm: "HS256",
+      expiresIn,
+    };
+    if (process.env.JWT_ISSUER) options.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) options.audience = process.env.JWT_AUDIENCE;
+    return jwt.sign(payload, secret, options);
+  }
+
   private async publishDomainEvent(event: BaseEvent): Promise<void> {
     await this.publishDomainEvents([event]);
   }
@@ -702,7 +720,7 @@ export class LoginService {
     const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
     const sessionCode = this.generateOpaqueToken("session");
     const refreshToken = this.generateOpaqueToken("refresh");
-    const accessToken = this.generateOpaqueToken("access");
+    const accessToken = this.signAccessJwt(activatedUser.id, identifier);
 
     const sessionToken = new SessionToken();
     Object.assign(sessionToken, {
@@ -882,7 +900,7 @@ export class LoginService {
     const expiresAt = new Date(issuedAt.getTime() + 1000 * 60 * 60 * 24 * 7);
     const sessionCode = this.generateOpaqueToken("session");
     const refreshToken = this.generateOpaqueToken("refresh");
-    const accessToken = this.generateOpaqueToken("access");
+    const accessToken = this.signAccessJwt(user.id, user.email || user.username || externalSubject);
 
     const sessionToken = new SessionToken();
     Object.assign(sessionToken, {

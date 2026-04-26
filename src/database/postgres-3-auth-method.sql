@@ -5,7 +5,7 @@
 -- (regla seccion 4.9.6 de docs/help.md). CRUD CQRS completo.
 -- Idempotente: INSERT ... ON CONFLICT (code) DO UPDATE.
 -- ====================================================================
-INSERT INTO "auth_method_base_entity" ("code", "displayName", "description", "metadata", "createdBy", "active", "type")
+INSERT INTO "auth_method_base_entity" ("code", "displayName", "description", "metadata", "createdBy", "isActive", "type")
 VALUES
   ('LOCAL_PASSWORD', 'Local Password', '', '{}'::jsonb, 'system', TRUE, 'authmethod'),
   ('OAUTH', 'Oauth', '', '{}'::jsonb, 'system', TRUE, 'authmethod'),
@@ -15,5 +15,5 @@ VALUES
   ('RECOVERY_CODE', 'Recovery Code', '', '{}'::jsonb, 'system', TRUE, 'authmethod')
 ON CONFLICT ("code") DO UPDATE SET
   "displayName"      = EXCLUDED."displayName",
-  "active"           = TRUE,
+  "isActive"           = TRUE,
   "modificationDate" = NOW();

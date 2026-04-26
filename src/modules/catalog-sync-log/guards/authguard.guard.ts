@@ -81,7 +81,7 @@ export class AuthGuard implements CanActivate {
   }
 
   private validateToken(token: string): boolean {
-    return token === 'valid-token';
+    return !!token; // delegado a JwtAuthGuard global (APP_GUARD)
   }
 
   private isWhitelistedTrace(body: any): boolean {

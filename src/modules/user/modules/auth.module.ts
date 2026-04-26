@@ -30,13 +30,11 @@
 
 
 import { Module } from "@nestjs/common";
-import { UserCommandController } from "../controllers/usercommand.controller";
 import { UserLoggingInterceptor } from "../interceptors/user.logging.interceptor";
 import { CommandBus, EventBus, UnhandledExceptionBus } from "@nestjs/cqrs";
 import { UserAuthGuard } from "../guards/userauthguard.guard";
 
 @Module({
-  controllers: [UserCommandController],
   providers: [
     UserAuthGuard,
     UserLoggingInterceptor,
