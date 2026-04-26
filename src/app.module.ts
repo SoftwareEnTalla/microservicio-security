@@ -104,6 +104,25 @@ import LoggerService, { logger } from "@core/logs/logger";
 
 */
 
+import { HorizontalModule } from "@common/horizontal";
+
+import { NomencladorListenersModule } from './modules/nomenclador-listeners/nomenclador-listeners.module';
+import { AccountStatusModule } from "./modules/account-status/modules/accountstatus.module";
+import { AuthMethodModule } from "./modules/auth-method/modules/authmethod.module";
+import { AuthStatusModule } from "./modules/auth-status/modules/authstatus.module";
+import { CertificationStatusModule } from "./modules/certification-status/modules/certificationstatus.module";
+import { ChallengeStatusModule } from "./modules/challenge-status/modules/challengestatus.module";
+import { ChallengeTypeModule } from "./modules/challenge-type/modules/challengetype.module";
+import { DeliveryModeModule } from "./modules/delivery-mode/modules/deliverymode.module";
+import { FlowTypeModule } from "./modules/flow-type/modules/flowtype.module";
+import { IdentifierTypeModule } from "./modules/identifier-type/modules/identifiertype.module";
+import { LoginIdentifierTypeModule } from "./modules/login-identifier-type/modules/loginidentifiertype.module";
+import { MfaModeModule } from "./modules/mfa-mode/modules/mfamode.module";
+import { ProtocolFamilyModule } from "./modules/protocol-family/modules/protocolfamily.module";
+import { ProviderTypeModule } from "./modules/provider-type/modules/providertype.module";
+import { SystemAdminPolicyDecisionModule } from "./modules/system-admin-policy-decision/modules/systemadminpolicydecision.module";
+import { TokenTypeModule } from "./modules/token-type/modules/tokentype.module";
+import { UserTypeModule } from "./modules/user-type/modules/usertype.module";
 @Module({
   imports: [
     // Se importa/registra el módulo de caché
@@ -152,6 +171,7 @@ import LoggerService, { logger } from "@core/logs/logger";
      * Módulos Security de la aplicación
      */
     CqrsModule,
+    HorizontalModule,
     SecurityModule,
         AuthenticationModule,
     IdentityFederationModule,
@@ -186,6 +206,24 @@ import LoggerService, { logger } from "@core/logs/logger";
           }),
         ]
       : []),
+  
+    NomencladorListenersModule,
+      AccountStatusModule,
+    AuthMethodModule,
+    AuthStatusModule,
+    CertificationStatusModule,
+    ChallengeStatusModule,
+    ChallengeTypeModule,
+    DeliveryModeModule,
+    FlowTypeModule,
+    IdentifierTypeModule,
+    LoginIdentifierTypeModule,
+    MfaModeModule,
+    ProtocolFamilyModule,
+    ProviderTypeModule,
+    SystemAdminPolicyDecisionModule,
+    TokenTypeModule,
+    UserTypeModule,
   ],
 
   /**

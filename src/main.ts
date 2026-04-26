@@ -131,6 +131,46 @@ async function bootstrap() {
     app.enableShutdownHooks();
     const globalPrefix = "api";
     app.setGlobalPrefix(globalPrefix);
+    // Helmet (headers de seguridad). Carga dinámica para no romper si la dep no está instalada en runtime.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const helmet = require("helmet");
+      const helmetFn = (helmet && (helmet.default || helmet)) as any;
+      if (typeof helmetFn === "function") {
+        app.use(helmetFn());
+      }
+    } catch (err) {
+      logger.warn("Helmet no disponible, continuando sin headers de seguridad: " + (err as Error).message);
+    }
+
+    // Compression (gzip) global. Carga dinámica.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const compression = require("compression");
+      const compressionFn = (compression && (compression.default || compression)) as any;
+      if (typeof compressionFn === "function") {
+        app.use(compressionFn());
+      }
+    } catch (err) {
+      logger.warn("compression no disponible: " + (err as Error).message);
+    }
+
+    // ValidationPipe global: aplica class-validator a todos los DTOs.
+    try {
+      const { ValidationPipe } = require("@nestjs/common");
+      app.useGlobalPipes(
+        new ValidationPipe({
+          whitelist: true,
+          transform: true,
+          forbidNonWhitelisted: false,
+          transformOptions: { enableImplicitConversion: true },
+        })
+      );
+    } catch (err) {
+      logger.warn("ValidationPipe no disponible: " + (err as Error).message);
+    }
+
+
     
     app.useGlobalFilters(new AllExceptionsFilter());
     const swaggerPath = setupSwagger(
