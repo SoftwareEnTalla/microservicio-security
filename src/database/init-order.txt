@@ -6,6 +6,7 @@ postgres-5-provider-type.sql
 postgres-6-protocol-family.sql
 postgres-7-login-identifier-type.sql
 postgres-8-flow-type.sql
+postgres-9-identifier-type.sql
 postgres-11-mfa-mode.sql
 postgres-12-challenge-status.sql
 postgres-13-challenge-type.sql
@@ -15,3 +16,4 @@ postgres-16-certification-status.sql
 postgres-17-system-admin-policy-decision.sql
 postgres-18-account-status.sql
 postgres-19-user-type.sql
+postgres-20-user-profile-bootstrap.sql

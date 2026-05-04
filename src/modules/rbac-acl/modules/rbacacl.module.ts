@@ -47,6 +47,7 @@ import { Role } from "../entities/role.entity";
 import { Permission } from "../entities/permission.entity";
 import { RolePermission } from "../entities/role-permission.entity";
 import { UserRoleAssignment } from "../entities/user-role-assignment.entity";
+import { User } from "../../user/entities/user.entity";
 import { CacheModule } from "@nestjs/cache-manager";
 import { CqrsModule } from "@nestjs/cqrs";
 import { KafkaModule } from "./kafka.module";
@@ -71,12 +72,13 @@ import { RoleCommandService } from "../services/role-command.service";
 import { PermissionCommandService } from "../services/permission-command.service";
 import { RbacAssignmentService } from "../services/rbac-assignment.service";
 import { AclResolverService } from "../services/acl-resolver.service";
+import { RbacBootstrapService } from "../services/rbac-bootstrap.service";
 
 @Module({
   imports: [
     CqrsModule,
     KafkaModule,
-    TypeOrmModule.forFeature([BaseEntity, RbacAcl, Role, Permission, RolePermission, UserRoleAssignment]),
+    TypeOrmModule.forFeature([BaseEntity, RbacAcl, Role, Permission, RolePermission, UserRoleAssignment, User]),
     CacheModule.register(), // Importa el módulo de caché
   ],
   controllers: [RbacAclCommandController, RbacAclQueryController],
@@ -90,6 +92,7 @@ import { AclResolverService } from "../services/acl-resolver.service";
     PermissionCommandService,
     RbacAssignmentService,
     AclResolverService,
+    RbacBootstrapService,
   
     //Repositories
     RbacAclCommandRepository,
@@ -135,6 +138,7 @@ import { AclResolverService } from "../services/acl-resolver.service";
     PermissionCommandService,
     RbacAssignmentService,
     AclResolverService,
+    RbacBootstrapService,
   
     //Repositories
     RbacAclCommandRepository,

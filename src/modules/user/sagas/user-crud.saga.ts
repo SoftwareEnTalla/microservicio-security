@@ -46,6 +46,7 @@ import {
   UpdateUserCommand,
   DeleteUserCommand
 } from '../commands/exporting.command';
+import { CreateUserProfileCommand } from '../../user-profile/commands/createuserprofile.command';
 
 //Logger - Codetrace
 import { LogExecutionTime } from 'src/common/logger/loggers.functions';
@@ -128,8 +129,30 @@ export class UserCrudSaga {
   })
   private async handleUserCreated(event: UserCreatedEvent): Promise<void> {
     try {
+      const instance = (event.payload?.instance ?? {}) as Record<string, any>;
+      const resolvedName = this.resolveUserProfileName(instance);
+
+      await this.commandBus.execute(
+        new CreateUserProfileCommand({
+          userId: event.aggregateId,
+          name: resolvedName,
+          description: `Perfil inicial de ${resolvedName}`,
+          createdBy: instance.createdBy || 'system',
+          isActive: true,
+          metadata: {
+            source: 'user-created',
+            email: instance.email || null,
+            username: instance.username || null,
+          },
+        }, event.payload)
+      );
+
       this.logger.log(`Saga User Created completada: ${event.aggregateId}`);
     } catch (error: any) {
+      if (this.isDuplicatedUserProfileError(error)) {
+        this.logger.warn(`UserProfile ya existe para el usuario ${event.aggregateId}`);
+        return;
+      }
       this.handleSagaError(error, event);
     }
   }
@@ -186,5 +209,14 @@ export class UserCrudSaga {
   private handleSagaError(error: Error, event: any) {
     this.logger.error(`Error en saga para evento ${event.constructor.name}: ${error.message}`);
     this.eventBus.publish(new SagaUserFailedEvent( error,event));
+  }
+
+  private resolveUserProfileName(instance: Record<string, any>): string {
+    return instance.name || instance.username || instance.email || instance.code || 'User Profile';
+  }
+
+  private isDuplicatedUserProfileError(error: any): boolean {
+    const message = String(error?.message || '').toLowerCase();
+    return message.includes('duplicate key') || message.includes('already exists') || message.includes('uq_user_profile_user_id');
   }
 }

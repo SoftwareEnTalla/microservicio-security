@@ -5,13 +5,15 @@
 -- (regla seccion 4.9.6 de docs/help.md). CRUD CQRS completo.
 -- Idempotente: INSERT ... ON CONFLICT (code) DO UPDATE.
 -- ====================================================================
-INSERT INTO "flow_type_base_entity" ("code", "displayName", "description", "metadata", "createdBy", "isActive", "type")
+INSERT INTO "flow_type_base_entity" ("code", "name", "displayName", "description", "metadata", "createdBy", "isActive", "type")
 VALUES
-  ('PASSWORD', 'Password', '', '{}'::jsonb, 'system', TRUE, 'flowtype'),
-  ('FEDERATED', 'Federated', '', '{}'::jsonb, 'system', TRUE, 'flowtype'),
-  ('REFRESH', 'Refresh', '', '{}'::jsonb, 'system', TRUE, 'flowtype'),
-  ('LOGOUT', 'Logout', '', '{}'::jsonb, 'system', TRUE, 'flowtype')
+  ('PASSWORD', 'Password', 'Password', 'Password', '{}'::jsonb, 'system', TRUE, 'flowtype'),
+  ('FEDERATED', 'Federated', 'Federated', 'Federated', '{}'::jsonb, 'system', TRUE, 'flowtype'),
+  ('REFRESH', 'Refresh', 'Refresh', 'Refresh', '{}'::jsonb, 'system', TRUE, 'flowtype'),
+  ('LOGOUT', 'Logout', 'Logout', 'Logout', '{}'::jsonb, 'system', TRUE, 'flowtype')
 ON CONFLICT ("code") DO UPDATE SET
+  "name"             = EXCLUDED."name",
   "displayName"      = EXCLUDED."displayName",
+  "description"      = EXCLUDED."description",
   "isActive"           = TRUE,
   "modificationDate" = NOW();
