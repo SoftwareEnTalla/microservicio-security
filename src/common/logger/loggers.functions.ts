@@ -8,6 +8,11 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@core/logs/logger";
 import { KafkaLoggerClient } from "./kafka-logger.client";
+import { getCurrentAuthorizationHeader, getCurrentRequestPath } from "./request-trace-context";
+import {
+  getCurrentAuthorizationHeader,
+  getCurrentRequestPath,
+} from "./request-trace-context";
 
 function getEnhancedContext(): LogContext {
   const error = new Error();
@@ -40,6 +45,43 @@ export function getRemoteApiLoggerUrl(): string {
     : "/command";
   return createUrl;
 }
+
+function getTraceSourceHeaderValue(): string {
+  const appName = (process.env.APP_NAME || "").trim();
+  if (appName) {
+    const normalizedAppName = appName
+      .replace(/app$/i, "")
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
+    if (normalizedAppName) {
+      return `${normalizedAppName}-service`;
+    }
+  }
+
+  const serviceName = (process.env.SERVICE_NAME || "").trim().toLowerCase();
+  return serviceName || "unknown-service";
+}
+
+function buildTraceHeaders(): Record<string, string> {
+  const sourceService = getTraceSourceHeaderValue();
+  const headers: Record<string, string> = {
+    "x-trace-source": sourceService,
+  };
+
+  const authorizationHeader = getCurrentAuthorizationHeader();
+  if (authorizationHeader) {
+    headers.Authorization = authorizationHeader;
+    return headers;
+  }
+
+  const requestPath = getCurrentRequestPath();
+  if (sourceService === "security-service" && requestPath) {
+    headers["x-trace-public-path"] = requestPath;
+  }
+
+  return headers;
+}
+
 export function LogExecutionTime(options: LogExecutionTimeOptions) {
   return function (
     target: any,
@@ -85,6 +127,7 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
         const logData: HttpLoggerApiRest = {
           endpoint: getRemoteApiLoggerUrl(),
           method: "POST",
+          headers: buildTraceHeaders(),
           body: {
             layer,
             uuid,
@@ -99,7 +142,8 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
           },
         };
 
-        if (client || (process.env.LOG_DELIVERY_MODE || "EVENT") === "EVENT") {
+        const logDeliveryMode = (process.env.LOG_DELIVERY_MODE || "EVENT").toUpperCase();
+        if (client || logDeliveryMode === "EVENT" || logDeliveryMode === "KAFKA") {
           await handleLogDelivery(client, logData, callback);
         }
 
@@ -117,6 +161,7 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
         const errorLogData: HttpLoggerApiRest = {
           endpoint: getRemoteApiLoggerUrl(),
           method: "POST",
+          headers: buildTraceHeaders(),
           body: {
             layer,
             uuid,
@@ -135,7 +180,8 @@ export function LogExecutionTime(options: LogExecutionTimeOptions) {
           },
         };
 
-        if (client || (process.env.LOG_DELIVERY_MODE || "EVENT") === "EVENT") {
+        const logDeliveryMode = (process.env.LOG_DELIVERY_MODE || "EVENT").toUpperCase();
+        if (client || logDeliveryMode === "EVENT" || logDeliveryMode === "KAFKA") {
           await handleLogDelivery(client, errorLogData, callback);
         }
 
@@ -177,20 +223,29 @@ async function handleLogDelivery(
     | ((data: HttpLoggerApiRest, client: ILoggerClient) => Promise<boolean>)
     | undefined
 ) {
-  const deliveryMode = process.env.LOG_DELIVERY_MODE || "EVENT";
+  const deliveryMode = (process.env.LOG_DELIVERY_MODE || "EVENT").toUpperCase();
 
   // ── Modo EVENT: enviar vía Kafka (transparente, ignora client REST) ──
-  if (deliveryMode === "EVENT") {
+  if (deliveryMode === "EVENT" || deliveryMode === "KAFKA") {
     const kafkaClient = KafkaLoggerClient.getInstance();
     try {
       const connected = await kafkaClient.connect();
       if (connected) {
-        await kafkaClient.send(logData);
+        const delivered = await kafkaClient.send(logData);
+        if (delivered) {
+          return true;
+        }
+        logger.warn("Kafka no confirmó el envío de la traza. Se intentará fallback REST.");
+      } else {
+        logger.warn("Kafka no disponible para trazas. Se intentará fallback REST.");
       }
     } catch (err: any) {
       logger.error(`Error en el envío del log vía Kafka: ${err.message}`);
     }
-    return;
+
+    if (!client) {
+      return false;
+    }
   }
 
   // ── Modo REST: comportamiento original vía HTTP ──

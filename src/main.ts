@@ -45,6 +45,7 @@ import { join } from "path";
 import { loadEnv, watchEnvChanges } from "@core/loaders/load-enviroments";
 
 import { AllExceptionsFilter } from "./filters/all-exception.filter";
+import { runWithRequestTraceContext } from "./common/logger/request-trace-context";
 
 const envPath = join(process.cwd(), ".env");
 loadEnv(envPath);
@@ -131,6 +132,18 @@ async function bootstrap() {
     app.enableShutdownHooks();
     const globalPrefix = "api";
     app.setGlobalPrefix(globalPrefix);
+    app.use((req, res, next) => {
+      const authorizationHeader = req.headers.authorization;
+      const requestPath = String(req.originalUrl || req.url || "");
+
+      runWithRequestTraceContext(
+        {
+          authorizationHeader: typeof authorizationHeader === "string" ? authorizationHeader : undefined,
+          requestPath,
+        },
+        next,
+      );
+    });
     // Helmet (headers de seguridad). Carga dinámica para no romper si la dep no está instalada en runtime.
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires

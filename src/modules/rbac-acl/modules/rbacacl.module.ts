@@ -32,6 +32,8 @@
 import { Module } from "@nestjs/common";
 import { RbacAclCommandController } from "../controllers/rbacaclcommand.controller";
 import { RbacAclQueryController } from "../controllers/rbacaclquery.controller";
+import { RbacCatalogCommandController } from "../controllers/rbaccatalogcommand.controller";
+import { RbacCatalogQueryController } from "../controllers/rbaccatalogquery.controller";
 import { RbacAclCommandService } from "../services/rbacaclcommand.service";
 import { RbacAclQueryService } from "../services/rbacaclquery.service";
 
@@ -81,7 +83,7 @@ import { RbacBootstrapService } from "../services/rbac-bootstrap.service";
     TypeOrmModule.forFeature([BaseEntity, RbacAcl, Role, Permission, RolePermission, UserRoleAssignment, User]),
     CacheModule.register(), // Importa el módulo de caché
   ],
-  controllers: [RbacAclCommandController, RbacAclQueryController],
+  controllers: [RbacAclCommandController, RbacAclQueryController, RbacCatalogCommandController, RbacCatalogQueryController],
   providers: [
     //Services
     EventStoreService,

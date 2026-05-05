@@ -40,6 +40,7 @@ import {
   Get,
   Query,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth, ApiUnauthorizedResponse } from "@nestjs/swagger";
 import { UserService } from "../services/user.service";
@@ -59,6 +60,9 @@ import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { logger } from '@core/logs/logger';
 
 import { BadRequestException } from "@nestjs/common";
+import { Public } from "src/common/horizontal/public.decorator";
+import { HttpLoggerClient } from "src/common/logger/http-logger.client";
+import { getRemoteApiLoggerUrl } from "src/common/logger/loggers.functions";
 
 @ApiTags("User Command")
 @UseGuards(UserAuthGuard, SystemAdminGuard)
@@ -74,6 +78,40 @@ export class UserCommandController {
   private readonly service: UserService,
   ) {
     //Coloca aquí la lógica que consideres necesaria para inicializar el controlador
+  }
+
+  private async emitPublicSignupTrace(status: "success" | "error", requestPath?: string, errorMessage?: string): Promise<void> {
+    const client = new HttpLoggerClient(getRemoteApiLoggerUrl(), false);
+    try {
+      const connected = await client.connect();
+      if (!connected) {
+        return;
+      }
+
+      await client.send({
+        endpoint: getRemoteApiLoggerUrl(),
+        method: "POST",
+        headers: {
+          "x-trace-source": "security-service",
+          ...(requestPath ? { "x-trace-public-path": requestPath } : {}),
+        },
+        body: {
+          layer: "controller",
+          className: UserCommandController.name,
+          functionName: `${UserCommandController.name}.signup`,
+          startTime: new Date().toISOString(),
+          endTime: new Date().toISOString(),
+          duration: 0,
+          durationUnit: "ms",
+          status,
+          ...(errorMessage ? { error: { message: errorMessage } } : {}),
+        },
+      });
+    } catch (traceError) {
+      logger.error(traceError);
+    } finally {
+      await client.close();
+    }
   }
 
   @ApiOperation({ summary: "Crear un usuario con los datos mínimos de la historia de usuario" })
@@ -116,6 +154,46 @@ export class UserCommandController {
       return entity;
     } catch (error) {
       logger.info("Error creating entity on controller:", error);
+      logger.error(error);
+      return Helper.throwCachedError(error);
+    }
+  }
+
+  @ApiOperation({ summary: "Registro público de cuenta base" })
+  @ApiBody({ type: CreateUserMinimalDto })
+  @ApiResponse({ status: 201, type: UserResponse<User> })
+  @Public()
+  @Post("signup")
+  @LogExecutionTime({
+    layer: "controller",
+    callback: async (logData, client) => {
+      try {
+        logger.info('Información del cliente y datos a enviar:', [logData, client]);
+        return await client.send(logData);
+      } catch (error) {
+        logger.info('Ha ocurrido un error al enviar la traza de log: ', logData);
+        logger.info('ERROR-LOG: ', error);
+        throw error;
+      }
+    },
+    client: LoggerClient.getInstance()
+      .registerClient(UserCommandController.name)
+      .get(UserCommandController.name),
+  })
+  async signup(
+    @Body() createUserDtoInput: CreateUserMinimalDto,
+    @Req() req?: any,
+  ): Promise<UserResponse<User>> {
+    try {
+      const response = await this.service.create(createUserDtoInput);
+      await this.emitPublicSignupTrace("success", req?.originalUrl || req?.url);
+      return response;
+    } catch (error) {
+      await this.emitPublicSignupTrace(
+        "error",
+        req?.originalUrl || req?.url,
+        error instanceof Error ? error.message : String(error),
+      );
       logger.error(error);
       return Helper.throwCachedError(error);
     }

@@ -11,6 +11,7 @@ import { PermissionAssignedToRoleEvent } from '../events/permissionassignedtorol
 import { PermissionRemovedFromRoleEvent } from '../events/permissionremovedfromrole.event';
 import { UserRoleAssignedEvent } from '../events/userroleassigned.event';
 import { UserRoleRevokedEvent } from '../events/userrolerevoked.event';
+import { AclResolverService } from './acl-resolver.service';
 import { logger } from '@core/logs/logger';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class RbacAssignmentService {
     private readonly roleRepo: Repository<Role>,
     @InjectRepository(Permission)
     private readonly permRepo: Repository<Permission>,
+    private readonly aclResolverService: AclResolverService,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
   ) {}
@@ -43,6 +45,7 @@ export class RbacAssignmentService {
     const saved = await this.rpRepo.save(rp);
     const event = PermissionAssignedToRoleEvent.create(saved.id, saved, assignedBy);
     await this.publishEvent(event);
+    await this.aclResolverService.resolveAclForAffectedUsers(roleId, assignedBy);
     logger.info('Permiso asignado a rol:', { roleId, permissionId });
     return saved;
   }
@@ -55,6 +58,7 @@ export class RbacAssignmentService {
     await this.rpRepo.remove(rp);
     const event = PermissionRemovedFromRoleEvent.create(rp.id, rp, removedBy);
     await this.publishEvent(event);
+    await this.aclResolverService.resolveAclForAffectedUsers(roleId, removedBy);
     logger.info('Permiso removido del rol:', { roleId, permissionId });
   }
 
@@ -77,12 +81,14 @@ export class RbacAssignmentService {
       const saved = await this.uraRepo.save(existing);
       const event = UserRoleAssignedEvent.create(saved.id, saved, assignedBy);
       await this.publishEvent(event);
+      await this.aclResolverService.resolveUserAcl(userId, assignedBy);
       return saved;
     }
     const ura = this.uraRepo.create({ userId, roleId, assignedBy, isActive: true });
     const saved = await this.uraRepo.save(ura);
     const event = UserRoleAssignedEvent.create(saved.id, saved, assignedBy);
     await this.publishEvent(event);
+    await this.aclResolverService.resolveUserAcl(userId, assignedBy);
     logger.info('Rol asignado a usuario:', { userId, roleId });
     return saved;
   }
@@ -97,6 +103,7 @@ export class RbacAssignmentService {
     await this.uraRepo.save(ura);
     const event = UserRoleRevokedEvent.create(ura.id, ura, revokedBy);
     await this.publishEvent(event);
+    await this.aclResolverService.resolveUserAcl(userId, revokedBy);
     logger.info('Rol revocado del usuario:', { userId, roleId });
   }
 

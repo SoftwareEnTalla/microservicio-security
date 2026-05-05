@@ -40,12 +40,49 @@ import { Public } from "src/common/horizontal/public.decorator";
 import { Helper } from "src/common/helpers/helpers";
 import { LogExecutionTime } from "src/common/logger/loggers.functions";
 import { LoggerClient } from "src/common/logger/logger.client";
+import { HttpLoggerClient } from "src/common/logger/http-logger.client";
+import { getRemoteApiLoggerUrl } from "src/common/logger/loggers.functions";
 import { logger } from '@core/logs/logger';
 @ApiTags("Login Command")
 @Controller("logins/command")
 export class LoginCommandController {
   #logger = new Logger(LoginCommandController.name);
   constructor(private readonly service: LoginService) {}
+
+  private async emitPublicTrace(status: "success" | "error", requestPath?: string, errorMessage?: string): Promise<void> {
+    const client = new HttpLoggerClient(getRemoteApiLoggerUrl(), false);
+    try {
+      const connected = await client.connect();
+      if (!connected) {
+        return;
+      }
+
+      await client.send({
+        endpoint: getRemoteApiLoggerUrl(),
+        method: "POST",
+        headers: {
+          "x-trace-source": "security-service",
+          ...(requestPath ? { "x-trace-public-path": requestPath } : {}),
+        },
+        body: {
+          layer: "controller",
+          className: LoginCommandController.name,
+          functionName: `${LoginCommandController.name}.authenticateWithPassword`,
+          startTime: new Date().toISOString(),
+          endTime: new Date().toISOString(),
+          duration: 0,
+          durationUnit: "ms",
+          status,
+          ...(errorMessage ? { error: { message: errorMessage } } : {}),
+        },
+      });
+    } catch (traceError) {
+      logger.error(traceError);
+    } finally {
+      await client.close();
+    }
+  }
+
   @ApiOperation({ summary: "Autenticar localmente con identificador y contraseña" })
   @ApiBody({ type: LoginAuthenticateWithPasswordDto })
   @ApiResponse({ status: 200, type: LoginResponse<Login> })
@@ -71,8 +108,15 @@ export class LoginCommandController {
         payload.ipAddress = payload.ipAddress || (req.ip || req.headers?.["x-forwarded-for"] || "");
         payload.userAgent = payload.userAgent || (req.headers?.["user-agent"] || "");
       }
-      return await this.service.authenticateWithPassword(payload);
+      const response = await this.service.authenticateWithPassword(payload);
+      await this.emitPublicTrace("success", req?.originalUrl || req?.url);
+      return response;
     } catch (error) {
+      await this.emitPublicTrace(
+        "error",
+        req?.originalUrl || req?.url,
+        error instanceof Error ? error.message : String(error),
+      );
       logger.error(error);
       return Helper.throwCachedError(error);
     }

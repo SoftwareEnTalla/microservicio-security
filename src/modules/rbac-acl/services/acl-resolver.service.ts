@@ -5,6 +5,7 @@ import { UserRoleAssignment } from '../entities/user-role-assignment.entity';
 import { RolePermission } from '../entities/role-permission.entity';
 import { Permission } from '../entities/permission.entity';
 import { Role } from '../entities/role.entity';
+import { User } from '../../user/entities/user.entity';
 import { KafkaEventPublisher } from '../shared/adapters/kafka-event-publisher';
 import { EventStoreService } from '../shared/event-store/event-store.service';
 import { AuthenticatedUserAclResolvedEvent, ResolvedAcl } from '../events/authenticateduseraclresolved.event';
@@ -23,6 +24,8 @@ export class AclResolverService {
     private readonly permRepo: Repository<Permission>,
     @InjectRepository(Role)
     private readonly roleRepo: Repository<Role>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly eventStore: EventStoreService,
     private readonly eventPublisher: KafkaEventPublisher,
   ) {}
@@ -81,6 +84,8 @@ export class AclResolverService {
       resolvedAt: new Date(),
     };
 
+    await this.syncResolvedAclToUserMetadata(userId, resolved);
+
     // 5. Publicar evento de ACL resuelto
     const event = AuthenticatedUserAclResolvedEvent.create(
       userId,
@@ -111,5 +116,25 @@ export class AclResolverService {
     if (process.env.EVENT_STORE_ENABLED === 'true') {
       await this.eventStore.appendEvent('acl-resolved-' + event.aggregateId, event);
     }
+  }
+
+  private async syncResolvedAclToUserMetadata(userId: string, resolved: ResolvedAcl): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      return;
+    }
+
+    const metadata = user.metadata && typeof user.metadata === 'object' ? { ...user.metadata } : {};
+    const primaryRole = resolved.roles[0] || null;
+    metadata.acls = {
+      role: primaryRole,
+      roles: resolved.roles,
+      permissions: resolved.permissions.some((permission) => permission.permissionCode === 'ERP_ALL')
+        ? ['*']
+        : resolved.permissions.map((permission) => permission.permissionCode),
+    };
+
+    user.metadata = metadata;
+    await this.userRepo.save(user);
   }
 }

@@ -8,6 +8,161 @@ import { RolePermission } from '../entities/role-permission.entity';
 import { UserRoleAssignment } from '../entities/user-role-assignment.entity';
 import { RbacAcl } from '../entities/rbac-acl.entity';
 
+interface BootstrapPermissionDefinition {
+  permissionCode: string;
+  resource: string;
+  action: string;
+  scope: string;
+  effect: 'ALLOW' | 'DENY';
+  description: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface BootstrapRoleDefinition {
+  roleCode: string;
+  roleName: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+  permissionCodes: string[];
+}
+
+const BOOTSTRAP_PERMISSIONS: BootstrapPermissionDefinition[] = [
+  {
+    permissionCode: 'ERP_ALL',
+    resource: '*',
+    action: '*',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Acceso total al ERP para administración raíz.',
+    metadata: { bootstrap: true, boundedContexts: ['*'], delegable: false },
+  },
+  {
+    permissionCode: 'SECURITY_USERS_MANAGE',
+    resource: 'users',
+    action: 'manage',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Gestiona usuarios autenticables y su ciclo de vida.',
+    metadata: { bootstrap: true, boundedContexts: ['security'], delegable: true },
+  },
+  {
+    permissionCode: 'SECURITY_RBAC_MANAGE',
+    resource: 'rbacacls',
+    action: 'manage',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Gestiona roles, permisos, asignaciones y ACL materializadas.',
+    metadata: { bootstrap: true, boundedContexts: ['security'], delegable: true },
+  },
+  {
+    permissionCode: 'CATALOG_MANAGE',
+    resource: 'catalog',
+    action: 'manage',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Gestiona catalogos, categorias, items y traducciones.',
+    metadata: { bootstrap: true, boundedContexts: ['catalog'], delegable: true },
+  },
+  {
+    permissionCode: 'ORGANIZATION_MANAGE',
+    resource: 'organization',
+    action: 'manage',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Gestiona organizaciones, estructuras y delegaciones.',
+    metadata: { bootstrap: true, boundedContexts: ['organization'], delegable: true },
+  },
+  {
+    permissionCode: 'HRMS_MANAGE',
+    resource: 'hrms',
+    action: 'manage',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Gestiona cargos, empleados y responsabilidades HRMS.',
+    metadata: { bootstrap: true, boundedContexts: ['hrms'], delegable: true },
+  },
+  {
+    permissionCode: 'SECURITY_USERS_READ',
+    resource: 'users',
+    action: 'read',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Consulta usuarios y su estado operativo.',
+    metadata: { bootstrap: true, boundedContexts: ['security'], delegable: true },
+  },
+  {
+    permissionCode: 'CATALOG_READ',
+    resource: 'catalog',
+    action: 'read',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Consulta catalogos y nomencladores corporativos.',
+    metadata: { bootstrap: true, boundedContexts: ['catalog'], delegable: true },
+  },
+  {
+    permissionCode: 'ORGANIZATION_READ',
+    resource: 'organization',
+    action: 'read',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Consulta organizaciones y unidades asociadas.',
+    metadata: { bootstrap: true, boundedContexts: ['organization'], delegable: true },
+  },
+  {
+    permissionCode: 'HRMS_READ',
+    resource: 'hrms',
+    action: 'read',
+    scope: 'all',
+    effect: 'ALLOW',
+    description: 'Consulta cargos, personas y relaciones HRMS.',
+    metadata: { bootstrap: true, boundedContexts: ['hrms'], delegable: true },
+  },
+];
+
+const BOOTSTRAP_ROLES: BootstrapRoleDefinition[] = [
+  {
+    roleCode: 'SUPER_ADMIN',
+    roleName: 'Super Admin',
+    description: 'Rol administrativo raíz con acceso total al ERP y capacidad de delegación global.',
+    metadata: { bootstrap: true, scope: 'global', delegable: true, priority: 100 },
+    permissionCodes: ['ERP_ALL'],
+  },
+  {
+    roleCode: 'ADMIN',
+    roleName: 'Administrator',
+    description: 'Rol administrativo operativo para gestionar usuarios, RBAC, catálogo y estructuras base.',
+    metadata: { bootstrap: true, scope: 'global', delegable: true, priority: 90 },
+    permissionCodes: [
+      'SECURITY_USERS_MANAGE',
+      'SECURITY_RBAC_MANAGE',
+      'CATALOG_MANAGE',
+      'ORGANIZATION_READ',
+      'HRMS_READ',
+    ],
+  },
+  {
+    roleCode: 'ORG_ADMIN',
+    roleName: 'Organization Admin',
+    description: 'Rol para administrar organizaciones, sus responsables y visibilidad operativa.',
+    metadata: { bootstrap: true, scope: 'organization', delegable: true, priority: 70 },
+    permissionCodes: ['ORGANIZATION_MANAGE', 'HRMS_READ', 'CATALOG_READ'],
+  },
+  {
+    roleCode: 'HRMS_MANAGER',
+    roleName: 'HRMS Manager',
+    description: 'Rol para administrar cargos, aprobaciones y responsabilidades del personal.',
+    metadata: { bootstrap: true, scope: 'organization', delegable: true, priority: 60 },
+    permissionCodes: ['HRMS_MANAGE', 'ORGANIZATION_READ', 'CATALOG_READ'],
+  },
+  {
+    roleCode: 'CATALOG_MANAGER',
+    roleName: 'Catalog Manager',
+    description: 'Rol para administrar catálogos transversales del ERP.',
+    metadata: { bootstrap: true, scope: 'global', delegable: true, priority: 50 },
+    permissionCodes: ['CATALOG_MANAGE', 'CATALOG_READ'],
+  },
+];
+
 @Injectable()
 export class RbacBootstrapService implements OnApplicationBootstrap {
   private readonly logger = new Logger(RbacBootstrapService.name);
@@ -34,17 +189,24 @@ export class RbacBootstrapService implements OnApplicationBootstrap {
     }
 
     try {
+      const permissions = await this.ensurePermissions();
+      const roles = await this.ensureRoles();
+      await this.ensureBootstrapRolePermissions(roles, permissions);
+
       const bootstrapUser = await this.resolveBootstrapUser();
       if (!bootstrapUser) {
-        this.logger.log('RBAC bootstrap omitido: no existe usuario administrador bootstrap.');
+        this.logger.log('RBAC bootstrap parcial completado: catálogo mínimo de roles y permisos cargado sin usuario bootstrap para asignar.');
         return;
       }
 
-      const role = await this.ensureRole();
-      const permission = await this.ensurePermission();
-      await this.ensureRolePermission(role.id, permission.id);
-      await this.ensureUserRoleAssignment(bootstrapUser.id, role.id);
+      const superAdminRole = roles.get('SUPER_ADMIN');
+      if (!superAdminRole) {
+        throw new Error('No se pudo materializar el rol SUPER_ADMIN durante el bootstrap RBAC.');
+      }
+
+      await this.ensureUserRoleAssignment(bootstrapUser.id, superAdminRole.id);
       await this.materializeAclRows();
+      await this.syncUserAclMetadata();
 
       this.logger.log(`RBAC bootstrap completado para userId=${bootstrapUser.id}.`);
     } catch (error) {
@@ -67,55 +229,83 @@ export class RbacBootstrapService implements OnApplicationBootstrap {
     });
   }
 
-  private async ensureRole(): Promise<Role> {
-    let role = await this.roleRepository.findOne({ where: { roleCode: 'SUPER_ADMIN' } });
-    if (role) {
-      if (!role.isActive || role.roleName !== 'Super Admin' || role.description !== 'Rol administrativo raíz con acceso total al ERP.') {
+  private async ensureRoles(): Promise<Map<string, Role>> {
+    const roles = new Map<string, Role>();
+
+    for (const definition of BOOTSTRAP_ROLES) {
+      let role = await this.roleRepository.findOne({ where: { roleCode: definition.roleCode } });
+      if (role) {
+        role.roleName = definition.roleName;
+        role.description = definition.description;
         role.isActive = true;
-        role.roleName = 'Super Admin';
-        role.description = 'Rol administrativo raíz con acceso total al ERP.';
-        role.metadata = { bootstrap: true, scope: 'global' };
-        role = await this.roleRepository.save(role);
+        role.metadata = definition.metadata;
+      } else {
+        role = this.roleRepository.create({
+          roleCode: definition.roleCode,
+          roleName: definition.roleName,
+          description: definition.description,
+          isActive: true,
+          metadata: definition.metadata,
+        });
       }
-      return role;
+
+      roles.set(definition.roleCode, await this.roleRepository.save(role));
     }
 
-    role = this.roleRepository.create({
-      roleCode: 'SUPER_ADMIN',
-      roleName: 'Super Admin',
-      description: 'Rol administrativo raíz con acceso total al ERP.',
-      isActive: true,
-      metadata: { bootstrap: true, scope: 'global' },
-    });
-
-    return this.roleRepository.save(role);
+    return roles;
   }
 
-  private async ensurePermission(): Promise<Permission> {
-    let permission = await this.permissionRepository.findOne({ where: { permissionCode: 'SECURITY_ALL' } });
-    if (permission) {
-      permission.resource = '*';
-      permission.action = '*';
-      permission.scope = 'all';
-      permission.effect = 'ALLOW';
-      permission.description = 'Permiso bootstrap para acceso total inicial del super administrador.';
-      permission.isActive = true;
-      permission.metadata = { bootstrap: true, boundedContext: 'security' };
-      return this.permissionRepository.save(permission);
+  private async ensurePermissions(): Promise<Map<string, Permission>> {
+    const permissions = new Map<string, Permission>();
+
+    for (const definition of BOOTSTRAP_PERMISSIONS) {
+      let permission = await this.permissionRepository.findOne({ where: { permissionCode: definition.permissionCode } });
+      if (permission) {
+        permission.resource = definition.resource;
+        permission.action = definition.action;
+        permission.scope = definition.scope;
+        permission.effect = definition.effect;
+        permission.description = definition.description;
+        permission.isActive = true;
+        permission.metadata = definition.metadata;
+      } else {
+        permission = this.permissionRepository.create({
+          permissionCode: definition.permissionCode,
+          resource: definition.resource,
+          action: definition.action,
+          scope: definition.scope,
+          effect: definition.effect,
+          description: definition.description,
+          isActive: true,
+          metadata: definition.metadata,
+        });
+      }
+
+      permissions.set(definition.permissionCode, await this.permissionRepository.save(permission));
     }
 
-    permission = this.permissionRepository.create({
-      permissionCode: 'SECURITY_ALL',
-      resource: '*',
-      action: '*',
-      scope: 'all',
-      effect: 'ALLOW',
-      description: 'Permiso bootstrap para acceso total inicial del super administrador.',
-      isActive: true,
-      metadata: { bootstrap: true, boundedContext: 'security' },
-    });
+    return permissions;
+  }
 
-    return this.permissionRepository.save(permission);
+  private async ensureBootstrapRolePermissions(
+    roles: Map<string, Role>,
+    permissions: Map<string, Permission>,
+  ): Promise<void> {
+    for (const roleDefinition of BOOTSTRAP_ROLES) {
+      const role = roles.get(roleDefinition.roleCode);
+      if (!role) {
+        continue;
+      }
+
+      for (const permissionCode of roleDefinition.permissionCodes) {
+        const permission = permissions.get(permissionCode);
+        if (!permission) {
+          continue;
+        }
+
+        await this.ensureRolePermission(role.id, permission.id);
+      }
+    }
   }
 
   private async ensureRolePermission(roleId: string, permissionId: string): Promise<RolePermission> {
@@ -214,6 +404,64 @@ export class RbacBootstrapService implements OnApplicationBootstrap {
 
         await this.rbacAclRepository.save(entity);
       }
+    }
+  }
+
+  private async syncUserAclMetadata(): Promise<void> {
+    const assignments = await this.userRoleAssignmentRepository.find({
+      where: { isActive: true },
+      relations: ['role'],
+      order: { assignedAt: 'ASC' },
+    });
+
+    const groupedAssignments = new Map<string, UserRoleAssignment[]>();
+    assignments.forEach((assignment) => {
+      const current = groupedAssignments.get(assignment.userId) || [];
+      current.push(assignment);
+      groupedAssignments.set(assignment.userId, current);
+    });
+
+    for (const [userId, userAssignments] of groupedAssignments.entries()) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        continue;
+      }
+
+      const activeRoles = userAssignments
+        .map((assignment) => assignment.role)
+        .filter((role): role is Role => !!role && role.isActive);
+
+      if (!activeRoles.length) {
+        continue;
+      }
+
+      const primaryRole = [...activeRoles].sort((left, right) => {
+        const leftPriority = Number(left.metadata?.priority || 0);
+        const rightPriority = Number(right.metadata?.priority || 0);
+        return rightPriority - leftPriority;
+      })[0];
+
+      const permissions = await this.rolePermissionRepository.find({
+        where: activeRoles.map((role) => ({ roleId: role.id })),
+        relations: ['permission'],
+      });
+
+      const permissionCodes = Array.from(new Set(
+        permissions
+          .map((rolePermission) => rolePermission.permission)
+          .filter((permission): permission is Permission => !!permission && permission.isActive)
+          .map((permission) => permission.permissionCode)
+      ));
+
+      const metadata = user.metadata && typeof user.metadata === 'object' ? { ...user.metadata } : {};
+      metadata.acls = {
+        role: primaryRole.roleCode,
+        roles: Array.from(new Set(activeRoles.map((role) => role.roleCode))),
+        permissions: permissionCodes.includes('ERP_ALL') ? ['*'] : permissionCodes,
+      };
+
+      user.metadata = metadata;
+      await this.userRepository.save(user);
     }
   }
 }

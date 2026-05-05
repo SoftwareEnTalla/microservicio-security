@@ -9,8 +9,10 @@ import {
   ForbiddenException,
   Injectable,
 } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { Request } from "express";
 import { AdminActionAuditService } from "../services/admin-action-audit.service";
+import { IS_PUBLIC_KEY } from "src/common/horizontal/public.decorator";
 
 const SYSTEM_ADMIN_UUID = "00000000-0000-0000-0000-000000000001";
 
@@ -28,9 +30,20 @@ const SYSTEM_ADMIN_UUID = "00000000-0000-0000-0000-000000000001";
  */
 @Injectable()
 export class SystemAdminGuard implements CanActivate {
-  constructor(private readonly audit: AdminActionAuditService) {}
+  constructor(
+    private readonly audit: AdminActionAuditService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
     const actorRole = String(request.headers["x-actor-role"] || "").toUpperCase();
     if (actorRole !== "ADMIN") return true;

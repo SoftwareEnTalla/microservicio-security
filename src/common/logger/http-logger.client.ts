@@ -196,12 +196,33 @@ export class HttpLoggerClient implements ILoggerClient {
 
   private prepareRequestData(data: HttpLoggerApiRest): string | null {
     try {
-      return JSON.stringify(data.body);
+      return JSON.stringify(this.toCodetracePayload(data));
     } catch (error) {
       logger.error("Error al serializar los datos del log", error);
       //throw new Error("Error al serializar los datos del log");
     }
     return null;
+  }
+
+  private toCodetracePayload(data: HttpLoggerApiRest): Record<string, unknown> {
+    const sourceService =
+      data.headers?.["x-trace-source"] ||
+      data.headers?.["X-Trace-Source"] ||
+      data.body.className ||
+      "unknown-service";
+
+    return {
+      name: `[${sourceService}] ${data.body.functionName || "unknown"}`.slice(0, 100),
+      description: JSON.stringify({
+        ...data.body,
+        sourceService,
+        deliveredVia: "rest",
+      }),
+      createdBy: sourceService,
+      isActive: true,
+      creationDate: data.body.startTime || new Date().toISOString(),
+      modificationDate: data.body.endTime || new Date().toISOString(),
+    };
   }
 
   private getProtocol(): typeof https | typeof http {
@@ -261,6 +282,13 @@ export class HttpLoggerClient implements ILoggerClient {
     data: HttpLoggerApiRest,
     requestData: string
   ): https.RequestOptions | http.RequestOptions {
+    const authorizationHeader =
+      (typeof data.headers?.Authorization === "string" && data.headers.Authorization) ||
+      (typeof data.headers?.authorization === "string" && data.headers.authorization) ||
+      (process.env.LOG_API_AUTH_TOKEN
+        ? `Bearer ${process.env.LOG_API_AUTH_TOKEN}`
+        : undefined);
+
     return {
       hostname: url.hostname,
       port: url.port || (url.protocol === "https:" ? 443 : 80),
@@ -273,6 +301,7 @@ export class HttpLoggerClient implements ILoggerClient {
         "Content-Length": Buffer.byteLength(requestData),
         Accept: "application/json",
         "User-Agent": "HttpLoggerClient/1.0",
+        ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
       },
       timeout: 30000, // Aumenta el timeout a 30 segundos
     };
