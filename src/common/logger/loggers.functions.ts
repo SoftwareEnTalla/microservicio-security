@@ -8,7 +8,6 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@core/logs/logger";
 import { KafkaLoggerClient } from "./kafka-logger.client";
-import { getCurrentAuthorizationHeader, getCurrentRequestPath } from "./request-trace-context";
 import {
   getCurrentAuthorizationHeader,
   getCurrentRequestPath,
